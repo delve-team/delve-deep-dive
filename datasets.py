@@ -12,26 +12,69 @@ import numpy as np
 
 import torch.utils.data
 
+
 @dataclass
 class Dataset(torch.utils.data.Dataset):
+    """ The Dataset class downloads and exposes an image dataset.
+
+    A dataset is structured around image IDs. These identify each unique picture.
+    Dictionaries then allow the user to lookup properties of each image,
+    such as its class label or whether it is in the training or test dataset.
+    The dataset class will preprocess the data and make sure each image has
+    the required output dimensions.
+
+    To be compatible with Torch, each image also has an index, ranging from 0 to
+    len(dataset) - 1. The indices are derived from the image's position in the images
+    map. The Dataset class exposes the images by index through the __getitem__ function.
+
+    The dataset also exposes the training indices and test indices. These can then be fed
+    into a SubsetRandomSampler to generate a dataloader that fetches data from the
+    training set and test set respectively.
+
+    To implement a dataset, subclass the Dataset function and implement the
+    _load_dataset_metadata function and set the _data_url variable.
+    The dataset will then download, unpack and initialise the data.
+
+    When loading the data, the user can optionally specify a list of class labels.
+    The dataset will then remove any images that do not have any of the given
+    class labels. This will be done before loading the data.
+    The images are guaranteed to be removed from the training set and test
+    set list, as well as the images dict and the _images_iter dict (and by implication
+    the __getitem__ interface). The dataset length will also be adjusted to correspond
+    to the number of images actually loaded.
+
+    Attributes:
+        _cache_dir          The location of the dataset on disk.
+        name                The name of the dataset.
+        _data_url           The URL specifying the location of the dataset.
+        image_paths         A map from image IDs to paths on disk.
+        images              A map from image IDs to the initialised data.
+        image_labels        A map from image IDs to the image's class label.
+        class_labels        A map from the class labels to the class names.
+        is_training_data    A map from the image IDs to a bool specifying if the image is in the training set.
+        training_ids        A list of the IDs of training images.
+        test_ids            A list of the IDs of test images.
+        _images_iter        A map from the image's index to the image data.
+    """
+
     _cache_dir: str
     name: str
     _data_url: str
     output_size: (int, int)
     image_paths: dict = field(default_factory=OrderedDict)
     images: dict = field(default_factory=OrderedDict)
-    images_iter: dict = field(default_factory=OrderedDict)
     image_labels: dict = field(default_factory=dict)
     class_labels: dict = field(default_factory=dict)
     is_training_data: dict = field(default_factory=dict)
     training_ids: list = field(default_factory=list)
     test_ids: list = field(default_factory=list)
+    _images_iter: dict = field(default_factory=OrderedDict)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, index):
-        return self.images_iter[index]
+        return self._images_iter[index]
 
     def training_indices(self):
         return [index for (index, key) in enumerate(self.images.keys()) if self.is_training_data[key]]
@@ -77,7 +120,7 @@ class Dataset(torch.utils.data.Dataset):
             image_interp = np.swapaxes(image_interp, 0, 2)
             image = torch.from_numpy(image_interp / 255)
             self.images[image_id] = image
-            self.images_iter[index] = image
+            self._images_iter[index] = image
 
 
     def init(self, selected_classes: list = list()):
