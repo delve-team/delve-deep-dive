@@ -39,7 +39,7 @@ class Dataset(torch.utils.data.Dataset):
     The dataset will then remove any images that do not have any of the given
     class labels. This will be done before loading the data.
     The images are guaranteed to be removed from the training set and test
-    set list, as well as the images dict and the _images_iter dict (and by implication
+    set list, as well as the images dict and the _image_ids list (and by implication
     the __getitem__ interface). The dataset length will also be adjusted to correspond
     to the number of images actually loaded.
 
@@ -54,7 +54,7 @@ class Dataset(torch.utils.data.Dataset):
         is_training_data    A map from the image IDs to a bool specifying if the image is in the training set.
         training_ids        A list of the IDs of training images.
         test_ids            A list of the IDs of test images.
-        _images_iter        A map from the image's index to the image data.
+        _image_ids          A list mapping image indices to image IDs.
     """
 
     _cache_dir: str
@@ -65,16 +65,17 @@ class Dataset(torch.utils.data.Dataset):
     images: dict = field(default_factory=OrderedDict)
     image_labels: dict = field(default_factory=dict)
     class_labels: dict = field(default_factory=dict)
+    class_ids: dict = field(default_factory=OrderedDict)
     is_training_data: dict = field(default_factory=dict)
     training_ids: list = field(default_factory=list)
     test_ids: list = field(default_factory=list)
-    _images_iter: dict = field(default_factory=OrderedDict)
+    _image_ids: list = field(default_factory=list)
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, index):
-        return self._images_iter[index]
+        return (self.images[self._image_ids[index]], self.class_ids[self.image_labels[self._image_ids[index]]])
 
     def training_indices(self):
         return [index for (index, key) in enumerate(self.images.keys()) if self.is_training_data[key]]
@@ -111,7 +112,8 @@ class Dataset(torch.utils.data.Dataset):
             if self.image_labels[image_id] not in selected_classes:
                 del self.image_paths[image_id]
                 del self.image_labels[image_id]
-
+        for index, label in enumerate(selected_classes):
+            self.class_ids[label] = index
 
     def _init_data(self):
         for index, (image_id, image_path) in enumerate(self.image_paths.items()):
@@ -120,7 +122,7 @@ class Dataset(torch.utils.data.Dataset):
             image_interp = np.swapaxes(image_interp, 0, 2)
             image = torch.from_numpy(image_interp / 255)
             self.images[image_id] = image
-            self._images_iter[index] = image
+            self._image_ids.append(image_id)
 
 
     def init(self, selected_classes: list = list()):
@@ -146,6 +148,9 @@ class Food101Dataset(Dataset):
                         continue
                     self.class_labels[line[0]] = line[1]
 
+        for index, label in enumerate(self.class_labels):
+            self.class_ids[label] = index
+
     def _load_json_labels(self, label_list, json_filename, metadata_folder, is_training_data):
         json_file = os.path.join(metadata_folder, json_filename)
         with open(json_file, 'r') as f:
@@ -163,4 +168,4 @@ class Food101Dataset(Dataset):
         metadata_folder = os.path.join(self._cache_dir, 'food-101', 'meta')
         self._load_class_labels(metadata_folder)
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
-        self._load_json_labels(self.test_ids, 'test.json', metadata_folder, True)
+        self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
