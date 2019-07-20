@@ -1,25 +1,23 @@
 import torch
-from torch.utils.data import SubsetRandomSampler, DataLoader
 import torch.optim as optim
 import torch.nn as nn
 
 
 class Trainer:
 
-    def __init__(self, model, dataset, epochs=10, batch_size=12):
+    def __init__(self, model, train_loader, test_loader, epochs=10, batch_size=12):
         self.model = model
-        self.dataset = dataset
         self.epochs = epochs
 
-        self.train_loader = DataLoader(dataset, batch_size=batch_size,
-                                       sampler=SubsetRandomSampler(dataset.training_indices()))
-        self.test_loader = DataLoader(dataset, batch_size=batch_size,
-                                      sampler=SubsetRandomSampler(dataset.test_indices()))
+
+        self.train_loader = train_loader
+        self.test_loader = test_loader
 
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
     def train(self):
+        self.model.train()
         for epoch in range(self.epochs):
             print("Epoch {}, loss: {}".format(epoch, self.train_epoch()))
 
@@ -38,6 +36,7 @@ class Trainer:
         return running_loss
 
     def test(self):
+        self.model.eval()
         correct = 0
         total = 0
         with torch.no_grad():
