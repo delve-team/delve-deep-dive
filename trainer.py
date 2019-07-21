@@ -3,7 +3,10 @@ import torch.optim as optim
 import torch.nn as nn
 from delve.torchcallback import CheckLayerSat
 import os
+from datetime import datetime
 
+def now():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 class Trainer:
 
@@ -25,7 +28,7 @@ class Trainer:
 
     def train(self):
         for epoch in range(self.epochs):
-            print("Epoch {}, loss: {}, accuracy: {}".format(epoch, *self.train_epoch()))
+            print("{} Epoch {}, loss: {}, accuracy: {}".format(now(), epoch, *self.train_epoch()))
             self.test()
             self.stats.add_saturations()
             self.stats.save()
@@ -69,4 +72,4 @@ class Trainer:
                 test_loss += loss.item()
         self.stats.add_scalar('test_loss', test_loss)
         self.stats.add_scalar('test_accuracy', correct/total)
-        print('Accuracy on {} images: {:.2f}'.format(total, correct/total))
+        print('{} Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))

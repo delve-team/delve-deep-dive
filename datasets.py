@@ -4,6 +4,7 @@ from PIL import Image
 import tarfile
 from urllib.request import urlretrieve
 from collections import OrderedDict
+from torch.utils.data import SubsetRandomSampler, DataLoader
 
 from dataclasses import dataclass, field
 import json
@@ -14,7 +15,6 @@ import numpy as np
 import torch.utils.data
 
 from torchvision import transforms
-
 
 
 @dataclass
@@ -59,6 +59,7 @@ class Dataset(torch.utils.data.Dataset):
         training_ids        A list of the IDs of training images.
         test_ids            A list of the IDs of test images.
         _image_ids          A list mapping image indices to image IDs.
+        _is_initialised     A boolean stating if the data is loaded
     """
 
     _cache_dir: str
@@ -74,6 +75,7 @@ class Dataset(torch.utils.data.Dataset):
     training_ids: list = field(default_factory=list)
     test_ids: list = field(default_factory=list)
     _image_ids: list = field(default_factory=list)
+    _is_initialised: bool = False
 
     def __len__(self):
         return len(self.images)
@@ -153,11 +155,14 @@ class Dataset(torch.utils.data.Dataset):
         self.transform_no_aug = transforms.Compose([TT, NRM])
 
     def init(self, selected_classes: list = list()):
+        if self._is_initialised == True:
+            return
         self._fetch_data()
         self._load_dataset_metadata()
         self._remove_unwanted_classes(selected_classes=selected_classes)
         self._setup_transforms()
         self._init_data()
+        self._is_initialised = True
 
 
 class Food101Dataset(Dataset):
@@ -197,3 +202,62 @@ class Food101Dataset(Dataset):
         self._load_class_labels(metadata_folder)
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
+
+
+def get_food101_dataset(batch_size=12, output_size=(512,512),
+                        cache_dir='tmp', selected_classes=list()):
+    dataset = Food101Dataset(cache_dir)
+    dataset.init(selected_classes=selected_classes)
+    train_loader = DataLoader(dataset, batch_size=batch_size,
+                              sampler=SubsetRandomSampler(dataset.training_indices()))
+    test_loader = DataLoader(dataset, batch_size=batch_size,
+                             sampler=SubsetRandomSampler(dataset.test_indices()))
+    train_loader.name = "Food101"
+    return train_loader, test_loader
+
+
+def get_cifar10_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+    if output_size != (32,32):
+        raise RuntimeError("Cifar10 only supports 32x32 images!")
+
+    # Transformations
+    RC = transforms.RandomCrop((32, 32), padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([TPIL, RC, RHF, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([TT, NRM])
+
+
+    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=2)
+    train_loader.name = "Cifar10"
+    return train_loader, testloader
+
+
+def get_imagenet_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+    raise NotImplementedError('ImageNet loader not finished!')
+
+    trainset = torchvision.datasets.ImageNet(root=cache_dir, split='train',
+                                             download=True);
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                               shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.ImageNet(root=cache_dir, split='test',
+                                            download=True);
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=2)
+    train_loader.name = "ImageNet"
+    return train_loader, test_loader
+
