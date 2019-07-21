@@ -11,7 +11,7 @@ from trainer import Trainer
 
 batch_size = 10
 criterion = nn.CrossEntropyLoss()
-model = LeNetModel((32, 32), 10)
+model = LeNetModel((512, 512), 2)
 #optimizer = optim.SGD(net.parameters(), lr=0.001)
 transform = transforms.Compose(
     [transforms.ToTensor(),
@@ -26,6 +26,8 @@ def get_food101_dataset(cache_dir='tmp', selected_classes=list()):
                               sampler=SubsetRandomSampler(dataset.training_indices()))
     test_loader = DataLoader(dataset, batch_size=batch_size,
                              sampler=SubsetRandomSampler(dataset.test_indices()))
+    train_loader.name = "food101"
+    test_loader.name = "food101"
     return train_loader, test_loader
 
 def get_cifar10_dataset(cache_dir='tmp'):
@@ -37,11 +39,12 @@ def get_cifar10_dataset(cache_dir='tmp'):
                                            download=True, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
+    trainloader.name = "cifar10"
     return trainloader, testloader
 
-#selected_classes = ['foie_gras', 'tacos']
-#train_loader, test_loader = get_food101_dataset('tmp',selected_classes)
-train_loader, test_loader = get_cifar10_dataset()
+selected_classes = ['foie_gras', 'tacos']
+train_loader, test_loader = get_food101_dataset('tmp',selected_classes)
+#train_loader, test_loader = get_cifar10_dataset()
 
 trainer = Trainer(model, train_loader, test_loader)
 trainer.train()

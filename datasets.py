@@ -1,5 +1,6 @@
 import os
 from imageio import imread
+from PIL import Image
 import tarfile
 from urllib.request import urlretrieve
 from collections import OrderedDict
@@ -11,6 +12,9 @@ import scipy.misc
 import numpy as np
 
 import torch.utils.data
+
+from torchvision import transforms
+
 
 
 @dataclass
@@ -75,7 +79,14 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-        return (self.images[self._image_ids[index]], self.class_ids[self.image_labels[self._image_ids[index]]])
+        image = self.images[self._image_ids[index]]
+        label = self.class_ids[self.image_labels[self._image_ids[index]]]
+
+        if self.is_training_data[self._image_ids[index]]:
+            transformed_image = self.transform_with_aug(image)
+        else:
+            transformed_image = self.transform_no_aug(image)
+        return (transformed_image, label)
 
     def training_indices(self):
         return [index for (index, key) in enumerate(self.images.keys()) if self.is_training_data[key]]
@@ -117,18 +128,35 @@ class Dataset(torch.utils.data.Dataset):
 
     def _init_data(self):
         for index, (image_id, image_path) in enumerate(self.image_paths.items()):
-            image = imread(image_path)
-            image_interp = scipy.misc.imresize(image, (*self.output_size, 3))
-            image_interp = np.swapaxes(image_interp, 0, 2)
-            image = torch.from_numpy(image_interp / 255)
-            self.images[image_id] = image
+            #image = imread(image_path)
+            #image_interp = scipy.misc.imresize(image, (*self.output_size, 3))
+            #image_interp = np.swapaxes(image_interp, 0, 2)
+            #image = torch.from_numpy(image_interp / 255)
+            #self.images[image_id] = image
+            RE = transforms.Resize(self.output_size)
+            self.images[image_id] = RE(Image.open(image_path))
+            #self.images[image_id].load()
             self._image_ids.append(image_id)
 
+    def _setup_transforms(self):
+        # Transformations
+        RC = transforms.RandomCrop(self.output_size, padding=4)
+        RHF = transforms.RandomHorizontalFlip()
+        RVF = transforms.RandomVerticalFlip()
+        NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        TT = transforms.ToTensor()
+        TPIL = transforms.ToPILImage()
+
+        # Transforms object for trainset with augmentation
+        self.transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
+        # Transforms object for testset with NO augmentation
+        self.transform_no_aug = transforms.Compose([TT, NRM])
 
     def init(self, selected_classes: list = list()):
         self._fetch_data()
         self._load_dataset_metadata()
         self._remove_unwanted_classes(selected_classes=selected_classes)
+        self._setup_transforms()
         self._init_data()
 
 

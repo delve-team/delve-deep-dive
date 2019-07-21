@@ -6,6 +6,7 @@ from functools import partial, reduce
 from operator import mul
 
 class LeNetModel(nn.Module):
+    name = "LeNet"
 
     @staticmethod
     def _input_fc_size(input_size: int):
