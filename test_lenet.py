@@ -3,18 +3,14 @@ import torchvision
 from torch import nn, optim
 import torchvision.transforms as transforms
 from datasets import get_food101_dataset, get_cifar10_dataset
-from models import LeNetModel
+from models import LeNetModel, vgg13
 from trainer import Trainer
 
 
 batch_size = 10
 criterion = nn.CrossEntropyLoss()
-model = LeNetModel((512, 512), 2)
-#optimizer = optim.SGD(net.parameters(), lr=0.001)
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
+#model = LeNetModel((512, 512), 2)
+model = vgg13()
 
 
 selected_classes = ['foie_gras', 'tacos']
