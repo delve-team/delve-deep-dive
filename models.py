@@ -13,7 +13,20 @@ from fastai.vision import learner
 from math import floor
 from operator import mul
 
-class LeNetModel(nn.Module):
+
+def Inception3(input_size=(32,32), num_classes=10):
+    model = torchvision.models.inception.Inception3(num_classes=num_classes)
+    model.name = "Inception3"
+    return model
+
+
+def ResNet18(input_size=(32,32), num_classes=10):
+    model = torchvision.models.resnet.resnet18(num_classes=num_classes)
+    model.name = "ResNet18"
+    return model
+
+
+class LeNet(nn.Module):
     name = "LeNet"
 
     @staticmethod
@@ -24,8 +37,8 @@ class LeNetModel(nn.Module):
         pool_size2 = floor((conv_size2 - 2) / 2) + 1
         return pool_size2
 
-    def __init__(self, input_size=(512,512), output_size=2):
-        super(LeNetModel, self).__init__()
+    def __init__(self, input_size=(512,512), num_classes=2):
+        super(LeNet, self).__init__()
         self.input_size = input_size
         self.input_fc_dims = tuple(map(self._input_fc_size, input_size))
         self.conv1 = nn.Conv2d(3, 6, 3)
@@ -33,7 +46,7 @@ class LeNetModel(nn.Module):
         self.conv2 = nn.Conv2d(6, 16, 3)
         self.fc1 = nn.Linear(16 * mul(*self.input_fc_dims), 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, output_size)
+        self.fc3 = nn.Linear(84, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x.float())))
@@ -53,7 +66,7 @@ class SimpleFCNet(nn.Module):
                  l1: int = 1024,
                  l2: int = 512,
                  l3: int = 256,
-                 n_classes: int = 10):
+                 num_classes: int = 10):
         super(SimpleFCNet, self).__init__()
 
         print('Setting up FCN with: l1', l1, 'l2', l2, 'l3', l3)
@@ -84,7 +97,7 @@ class SimpleCNN(nn.Module):
                  l1: int = 8,
                  l2: int = 16,
                  l3: int = 32,
-                 n_classes: int = 10):
+                 num_classes: int = 10):
         super(SimpleCNN, self).__init__()
 
         print('Setting up CNN with: l1',l1,'l2',l2,'l3',l3)
@@ -119,7 +132,7 @@ class SimpleCNN(nn.Module):
 class SimpleCNNKernel(nn.Module):
     name = "SimpleCNNKernel"
 
-    def __init__(self, in_channels: int = 3, l1: int = 5, l2: int = 5, l3: int = 5, n_classes: int = 10):
+    def __init__(self, in_channels: int = 3, l1: int = 5, l2: int = 5, l3: int = 5, num_classes: int = 10):
         super(SimpleCNNKernel, self).__init__()
 
         print('Setting up CNN with: kernel1', l1, 'kernel2', l2, 'kernel3', l3)
@@ -209,7 +222,9 @@ def make_layers(cfg, batch_norm=True, k_size=3):
 
 class VGG(nn.Module):
 
-    def __init__(self, features, num_classes=10, init_weights=True, final_filter: int = 512, pretrained=False):
+    def __init__(self, features, num_classes=10, init_weights=True,
+                 final_filter: int = 512, pretrained=False,
+                 input_size=(32,32)):
         super(VGG, self).__init__()
         self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d(1)

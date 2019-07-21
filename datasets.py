@@ -14,6 +14,7 @@ import numpy as np
 
 import torch.utils.data
 
+import torchvision
 from torchvision import transforms
 
 
@@ -204,7 +205,7 @@ class Food101Dataset(Dataset):
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
 
 
-def get_food101_dataset(batch_size=12, output_size=(512,512),
+def Food101(batch_size=12, output_size=(512,512),
                         cache_dir='tmp', selected_classes=list()):
     dataset = Food101Dataset(cache_dir)
     dataset.init(selected_classes=selected_classes)
@@ -213,10 +214,11 @@ def get_food101_dataset(batch_size=12, output_size=(512,512),
     test_loader = DataLoader(dataset, batch_size=batch_size,
                              sampler=SubsetRandomSampler(dataset.test_indices()))
     train_loader.name = "Food101"
-    return train_loader, test_loader
+    num_classes = len(selected_classes) if selected_classes else 101
+    return train_loader, test_loader, output_size, num_classes
 
 
-def get_cifar10_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     if output_size != (32,32):
         raise RuntimeError("Cifar10 only supports 32x32 images!")
 
@@ -229,7 +231,7 @@ def get_cifar10_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     TPIL = transforms.ToPILImage()
 
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([TPIL, RC, RHF, TT, NRM])
+    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
     # Transforms object for testset with NO augmentation
     transform_no_aug = transforms.Compose([TT, NRM])
 
@@ -243,10 +245,10 @@ def get_cifar10_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
     train_loader.name = "Cifar10"
-    return train_loader, testloader
+    return train_loader, test_loader, (32,32), 10
 
 
-def get_imagenet_dataset(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+def ImageNet(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     raise NotImplementedError('ImageNet loader not finished!')
 
     trainset = torchvision.datasets.ImageNet(root=cache_dir, split='train',
