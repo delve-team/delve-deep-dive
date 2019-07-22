@@ -10,7 +10,8 @@ def now():
 
 class Trainer:
 
-    def __init__(self, model, train_loader, test_loader, epochs=200, batch_size=60, logs_dir='logs'):
+    def __init__(self, model, train_loader, test_loader, epochs=200, batch_size=60, run_id=0, logs_dir='logs', device='cpu'):
+        self.device = device
         self.model = model
         self.epochs = epochs
 
@@ -24,9 +25,10 @@ class Trainer:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        self.stats = CheckLayerSat(os.path.join(save_dir, str(batch_size)), 'csv', model, stats=['lsat'])
+        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'])
 
     def train(self):
+        self.model.to(self.device)
         for epoch in range(self.epochs):
             print("{} Epoch {}, loss: {}, accuracy: {}".format(now(), epoch, *self.train_epoch()))
             self.test()
@@ -41,20 +43,22 @@ class Trainer:
         running_loss = 0
         for batch, data in enumerate(self.train_loader):
             inputs, labels = data
+            inputs, labels = inputs.to(self.device), labels.to(self.device)
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
+
             correct += (predicted == labels).sum().item()
             loss = self.criterion(outputs, labels)
             loss.backward()
             self.optimizer.step()
 
             running_loss += loss.item()
-        self.stats.add_scalar('training_loss', running_loss)
+        self.stats.add_scalar('training_loss', running_loss/total)
         self.stats.add_scalar('training_accuracy', correct/total)
-        return running_loss, correct/total
+        return running_loss/total, correct/total
 
     def test(self):
         self.model.eval()
@@ -64,12 +68,13 @@ class Trainer:
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
                 inputs, labels = data
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
                 test_loss += loss.item()
-        self.stats.add_scalar('test_loss', test_loss)
+        self.stats.add_scalar('test_loss', test_loss/total)
         self.stats.add_scalar('test_accuracy', correct/total)
         print('{} Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))
