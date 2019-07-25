@@ -1,15 +1,6 @@
-import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 import torchvision
-import torchvision.transforms as transforms
-
-from fastai.layers import AdaptiveConcatPool2d
-from delve import CheckLayerSat
-from tqdm import tqdm, trange
-from fastai.vision import learner
 from math import floor
 from operator import mul
 
@@ -116,7 +107,6 @@ cfg = {
     'AXXS': [8, 'M', 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
     'AXXXS': [4, 'M', 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'AL': [128, 'M', 256, 'M', 512, 512, 'M', 1024, 1024, 'M', 1024, 1024, 'M'],
     'BS': [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M'],
     'BXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
     'BXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
@@ -127,7 +117,6 @@ cfg = {
     'DXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 'M', 64, 64, 64, 'M', 64, 64, 64, 'M'],
     'DXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 'M', 128, 128, 128, 'M', 128, 128, 128, 'M'],
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'DL': [128, 128, 'M', 256, 256, 'M', 512, 512, 512, 'M', 1024, 1024, 1024, 'M', 1024, 1024, 1024, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'ES': [32, 32, 'M', 64, 64, 'M', 128, 128, 128, 128, 'M', 256, 256, 256, 256, 'M', 256, 256, 256, 256, 'M'],
     'EXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 64, 'M', 128, 128, 128, 128, 'M', 128, 128, 128, 128, 'M'],
@@ -201,17 +190,6 @@ def vgg16(*args, **kwargs):
     model = VGG(make_layers(cfg['D']), **kwargs)
     model.name = "VGG16"
     return model
-
-
-def vgg16_L(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['DL']), **kwargs)
-    model.name = "VGG16_L"
-    return model
-
 
 def vgg16_S(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
@@ -403,26 +381,6 @@ def vgg9_XXS(*args, **kwargs):
     return model
 
 
-def vgg9_5(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['Z'], k_size=5), **kwargs)
-    model.name = "VGG9_5"
-    return model
-
-
-def vgg9_7(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['Z'], k_size=7), **kwargs)
-    model.name = "VGG9_7"
-    return model
-
-
 def vgg9(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
     Args:
@@ -439,15 +397,6 @@ def vgg11(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['A']), **kwargs)
     model.name = "VGG11"
-    return model
-
-def vgg11_L(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['AL']), **kwargs)
-    model.name = "VGG11_L"
     return model
 
 def vgg11_S(*args, **kwargs):
@@ -484,70 +433,6 @@ def vgg11_XXXS(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['AXXXS']), final_filter=32, **kwargs)
     model.name = "VGG11_XXXS"
-    return model
-
-def vgg11_5(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['A'], k_size=5), **kwargs)
-    model.name = "VGG11_5"
-    return model
-
-def vgg11_7(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['A'], k_size=7), **kwargs)
-    model.name = "VGG11_7"
-    return model
-
-
-def vgg11nbn(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['A'], batch_norm=False), **kwargs)
-    model.name = "VGG11NBN"
-    return model
-
-def vgg11nbn_L(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['AL'], batch_norm=False), **kwargs)
-    model.name = "VGG11NBN_L"
-    return model
-
-def vgg11nbn_S(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['AS'], batch_norm=False), final_filter=256, **kwargs)
-    model.name = "VGG11NBN_S"
-    return model
-
-def vgg11nbn_5(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['A'], k_size=5, batch_norm=False), **kwargs)
-    model.name = "VGG11NBN_5"
-    return model
-
-def vgg11nbn_7(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['A'], k_size=7, batch_norm=False), **kwargs)
-    model.name = "VGG11NBN_7"
     return model
 
 
@@ -596,24 +481,6 @@ def vgg13_XXXS(*args, **kwargs):
     model.name = "VGG13_XXXS"
     return model
 
-def vgg13_5(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['B'], k_size=5), **kwargs)
-    model.name = "VGG13_5"
-    return model
-
-def vgg13_7(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['B'], k_size=7), **kwargs)
-    model.name = "VGG13_7"
-    return model
-
 def vgg19(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
     Args:
@@ -657,22 +524,4 @@ def vgg19_XXXS(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['EXXXS']), final_filter=32, **kwargs)
     model.name = "VGG19_XXXS"
-    return model
-
-def vgg19_5(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['E'], k_size=5), **kwargs)
-    model.name = "VGG19_5"
-    return model
-
-def vgg19_7(*args, **kwargs):
-    """VGG 16-layer model (configuration "D")
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
-    model = VGG(make_layers(cfg['E'], k_size=7), **kwargs)
-    model.name = "VGG19_7"
     return model

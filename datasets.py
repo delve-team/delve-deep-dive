@@ -5,7 +5,7 @@ import tarfile
 from urllib.request import urlretrieve
 from collections import OrderedDict
 from torch.utils.data import SubsetRandomSampler, DataLoader
-
+from torch.utils.data import Dataset
 from dataclasses import dataclass, field
 import json
 import scipy
@@ -17,6 +17,93 @@ import torch.utils.data
 import torchvision
 from torchvision import transforms
 
+def get_class_i(x, y, i):
+    """
+    x: trainset.train_data or testset.test_data
+    y: trainset.train_labels or testset.test_labels
+    i: class label, a number between 0 to 9
+    return: x_i
+    """
+    # Convert to a numpy array
+    y = np.array(y)
+    # Locate position of labels that equal to i
+    pos_i = np.argwhere(y == i)
+    # Convert the result into a 1-D list
+    pos_i = list(pos_i[:, 0])
+    # Collect all data that match the desired label
+    x_i = [x[j] for j in pos_i]
+
+    return x_i
+
+
+class DatasetMaker(Dataset):
+    def __init__(self, datasets, transformFunc):
+        """
+        datasets: a list of get_class_i outputs, i.e. a list of list of images for selected classes
+        """
+        self.datasets = datasets
+        self.lengths = [len(d) for d in self.datasets]
+        self.transformFunc = transformFunc
+
+    def __getitem__(self, i):
+        class_label, index_wrt_class = self.index_of_which_bin(self.lengths, i)
+        img = self.datasets[class_label][index_wrt_class]
+        img = self.transformFunc(img)
+        return img, class_label
+
+    def __len__(self):
+        return sum(self.lengths)
+
+    def index_of_which_bin(self, bin_sizes, absolute_index, verbose=False):
+        """
+        Given the absolute index, returns which bin it falls in and which element of that bin it corresponds to.
+        """
+        # Which class/bin does i fall into?
+        accum = np.add.accumulate(bin_sizes)
+        if verbose:
+            print("accum =", accum)
+        bin_index = len(np.argwhere(accum <= absolute_index))
+        if verbose:
+            print("class_label =", bin_index)
+        # Which element of the fallent class/bin does i correspond to?
+        index_wrt_class = absolute_index - np.insert(accum, 0, 0)[bin_index]
+        if verbose:
+            print("index_wrt_class =", index_wrt_class)
+
+        return bin_index, index_wrt_class
+
+def _get_n_fold_datasets_train(x_train, y_train, classDict, transformer, batch_size, class_names=['cat', 'dog']):
+
+    # Let's choose cats (class 3 of CIFAR) and dogs (class 5 of CIFAR) as trainset/testset
+    cat_dog_trainset = \
+        DatasetMaker(
+            [get_class_i(x_train, y_train, classDict[class_names[0]]), get_class_i(x_train, y_train, classDict[class_names[1]])],
+            transformer
+        )
+
+    kwargs = {'num_workers': 2, 'pin_memory': False}
+
+    # Create datasetLoaders from trainset and testse
+
+    trainsetLoader = DataLoader(cat_dog_trainset, batch_size=batch_size, shuffle=True, **kwargs)
+    return trainsetLoader
+
+
+def _get_n_fold_datasets_test(x_test, y_test, classDict, transformer, batch_size, class_names=['cat', 'dog']):
+    # Let's choose cats (class 3 of CIFAR) and dogs (class 5 of CIFAR) as trainset/testset
+    cat_dog_testset = \
+        DatasetMaker(
+            [get_class_i(x_test, y_test, classDict[class_names[0]]),
+             get_class_i(x_test, y_test, classDict[class_names[1]])],
+            transformer
+        )
+
+    kwargs = {'num_workers': 2, 'pin_memory': False}
+
+    # Create datasetLoaders from trainset and testse
+
+    testsetLoader = DataLoader(cat_dog_testset, batch_size=batch_size, shuffle=False, **kwargs)
+    return testsetLoader
 
 @dataclass
 class Dataset(torch.utils.data.Dataset):
@@ -165,7 +252,6 @@ class Dataset(torch.utils.data.Dataset):
         self._init_data()
         self._is_initialised = True
 
-
 class Food101Dataset(Dataset):
 
     def __init__(self, cache_dir, output_size=(512, 512)):
@@ -204,7 +290,6 @@ class Food101Dataset(Dataset):
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
 
-
 def Food101(batch_size=12, output_size=(512,512),
                         cache_dir='tmp', selected_classes=list()):
     dataset = Food101Dataset(cache_dir)
@@ -217,6 +302,54 @@ def Food101(batch_size=12, output_size=(512,512),
     num_classes = len(selected_classes) if selected_classes else 101
     return train_loader, test_loader, output_size, num_classes
 
+def CatVsDog(batch_size=12, output_size=(32, 32), cache_dir='tmp'):
+    if output_size != (32,32):
+        raise RuntimeError("Cifar10 only supports 32x32 images!")
+
+    # Transformations
+    RC = transforms.RandomCrop((32, 32), padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([TPIL, RC, RHF, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([TT, NRM])
+
+
+    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+
+    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+
+    classDict = trainset.class_to_idx
+
+    # Separating trainset/testset data/label
+    x_train = trainset.data
+    x_test = testset.data
+    y_train = trainset.targets
+    y_test = testset.targets
+
+    train_loader = _get_n_fold_datasets_train(y_train=y_train,
+                                              x_train=x_train,
+                                              classDict=classDict,
+                                              transformer=transform_with_aug,
+                                              batch_size=batch_size,
+                                              class_names=['cat', 'dog'])
+    test_loader = _get_n_fold_datasets_test(y_test=y_test,
+                                            x_test=x_test,
+                                            classDict=classDict,
+                                            transformer=transform_no_aug,
+                                            batch_size=batch_size,
+                                            class_names=['cat', 'dog'])
+
+    train_loader.name = "CatVsDog"
+
+    return train_loader, test_loader, (32,32), 2
 
 def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     if output_size != (32,32):
@@ -247,6 +380,34 @@ def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10
 
+def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+    if output_size != (32,32):
+        raise RuntimeError("Cifar10 only supports 32x32 images!")
+
+    # Transformations
+    RC = transforms.RandomCrop((32, 32), padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([TT, NRM])
+
+
+    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=2)
+    train_loader.name = "Cifar100"
+    return train_loader, test_loader, (32,32), 100
 
 def ImageNet(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     raise NotImplementedError('ImageNet loader not finished!')

@@ -4,6 +4,7 @@ import torch.nn as nn
 from delve.torchcallback import CheckLayerSat
 import os
 from datetime import datetime
+import pandas as pd
 
 def now():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -25,12 +26,23 @@ class Trainer:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
+        savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}')
+        self.experiment_done = False
+        if os.path.exists(savepath):
+            if len(pd.read_csv(savepath, sep=';')) == epochs:
+                self.experiment_done = True
+                print('Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
+
+
+
         self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'])
 
     def train(self):
+        if self.experiment_done:
+            return
         self.model.to(self.device)
         for epoch in range(self.epochs):
-            print("{} Epoch {}, loss: {}, accuracy: {}".format(now(), epoch, *self.train_epoch()))
+            print("{} Epoch {}, training loss: {}, training accuracy: {}".format(now(), epoch, *self.train_epoch()))
             self.test()
             self.stats.add_saturations()
             self.stats.save()
@@ -77,4 +89,4 @@ class Trainer:
                 test_loss += loss.item()
         self.stats.add_scalar('test_loss', test_loss/total)
         self.stats.add_scalar('test_accuracy', correct/total)
-        print('{} Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))
+        print('{} Test Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))

@@ -1,0 +1,12 @@
+{
+  "models" : ["vgg11", "vgg11_S", "vgg11_XS", "vgg11_XXS", "vgg11_XXXS",
+              "vgg13", "vgg13_S", "vgg13_XS", "vgg13_XXS", "vgg13_XXXS",
+              "vgg16", "vgg16_S", "vgg16_XS", "vgg16_XXS", "vgg16_XXXS",
+              "vgg19", "vgg19_S", "vgg19_XS", "vgg19_XXS", "vgg19_XXXS"
+  ],
+
+  "dataset": "Food101",
+  "epochs":   50,
+  "batch_sizes": [2, 32, 128, 512]
+
+}
