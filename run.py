@@ -20,7 +20,6 @@ parser.add_argument('-cf', '--config', dest='json_file', action='store', default
 def parse_model(model_name, shape, num_classes):
     try:
         model = models.__dict__[model_name](input_size=shape, num_classes=num_classes)
-        print(model)
     except KeyError:
         raise NameError("%s doesn't exist." % model_name)
     return model
@@ -53,5 +52,5 @@ if __name__ == '__main__':
                 print('Runnin Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
                 train_loader, test_loader, shape, num_classes = parse_dataset(config_dict['dataset'], batch_size)
                 model = parse_model(model, shape, num_classes)
-                trainer = Trainer(model, train_loader, test_loader, logs_dir=args.output, device=args.device, run_id=args.run_id)
+                trainer = Trainer(model, train_loader, test_loader, logs_dir=args.output, device=args.device, run_id=args.run_id, epochs=config_dict['epochs'])
                 trainer.train()

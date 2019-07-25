@@ -26,10 +26,12 @@ class Trainer:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}')
+        savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}.csv')
         self.experiment_done = False
         if os.path.exists(savepath):
-            if len(pd.read_csv(savepath, sep=';')) == epochs:
+            trained_epochs = len(pd.read_csv(savepath, sep=';'))
+
+            if trained_epochs == epochs:
                 self.experiment_done = True
                 print('Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
 
