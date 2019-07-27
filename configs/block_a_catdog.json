@@ -7,6 +7,6 @@
 
   "dataset": "CatVsDog",
   "epochs":   20,
-  "batch_sizes": [2, 32, 128, 512]
+  "batch_sizes": [32, 128, 512]
 
 }

@@ -56,6 +56,7 @@ class Trainer:
         total = 0
         running_loss = 0
         for batch, data in enumerate(self.train_loader):
+            print(batch, 'of', len(self.train_loader))
             inputs, labels = data
             inputs, labels = inputs.to(self.device), labels.to(self.device)
 
