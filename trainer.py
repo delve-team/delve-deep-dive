@@ -37,7 +37,7 @@ class Trainer:
 
 
 
-        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'])
+        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=2)
 
     def train(self):
         if self.experiment_done:
