@@ -382,7 +382,7 @@ def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
 
 def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     if output_size != (32,32):
-        raise RuntimeError("Cifar10 only supports 32x32 images!")
+        raise RuntimeError("Cifar100 only supports 32x32 images!")
 
     # Transformations
     RC = transforms.RandomCrop((32, 32), padding=4)
@@ -398,11 +398,11 @@ def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     transform_no_aug = transforms.Compose([TT, NRM])
 
 
-    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+    trainset = torchvision.datasets.CIFAR100(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
-    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+    testset = torchvision.datasets.CIFAR100(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=2)
