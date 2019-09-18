@@ -81,7 +81,7 @@ def _get_n_fold_datasets_train(x_train, y_train, classDict, transformer, batch_s
             transformer
         )
 
-    kwargs = {'num_workers': 2, 'pin_memory': False}
+    kwargs = {'num_workers': 4, 'pin_memory': False}
 
     # Create datasetLoaders from trainset and testse
 
@@ -98,7 +98,7 @@ def _get_n_fold_datasets_test(x_test, y_test, classDict, transformer, batch_size
             transformer
         )
 
-    kwargs = {'num_workers': 2, 'pin_memory': False}
+    kwargs = {'num_workers': 4, 'pin_memory': False}
 
     # Create datasetLoaders from trainset and testse
 
@@ -362,6 +362,7 @@ def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     TT = transforms.ToTensor()
     TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(224)
 
     # Transforms object for trainset with augmentation
     transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
@@ -372,11 +373,11 @@ def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=2)
+                                              shuffle=True, num_workers=4, pin_memory=True)
     testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=2)
+                                             shuffle=False, num_workers=4, pin_memory=True)
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10
 
@@ -401,11 +402,11 @@ def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.CIFAR100(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=2)
+                                              shuffle=True, num_workers=4)
     testset = torchvision.datasets.CIFAR100(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=2)
+                                             shuffle=False, num_workers=4)
     train_loader.name = "Cifar100"
     return train_loader, test_loader, (32,32), 100
 
@@ -415,12 +416,12 @@ def ImageNet(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.ImageNet(root=cache_dir, split='train',
                                              download=True);
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                               shuffle=True, num_workers=2)
+                                               shuffle=True, num_workers=4)
 
     testset = torchvision.datasets.ImageNet(root=cache_dir, split='test',
                                             download=True);
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=2)
+                                             shuffle=False, num_workers=4)
     train_loader.name = "ImageNet"
     return train_loader, test_loader
 

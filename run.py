@@ -44,13 +44,13 @@ if __name__ == '__main__':
     else:
         print('Automatized experiment schedule enabled using', args.json_file)
         config_dict = json.load(open(args.json_file, 'r'))
-
+        optimizer = config_dict['optimizer']
         run_num = 0
         for batch_size in config_dict['batch_sizes']:
             for model in config_dict['models']:
                 run_num += 1
-                print('Runnin Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
+                print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
                 train_loader, test_loader, shape, num_classes = parse_dataset(config_dict['dataset'], batch_size)
                 model = parse_model(model, shape, num_classes)
-                trainer = Trainer(model, train_loader, test_loader, logs_dir=args.output, device=args.device, run_id=args.run_id, epochs=config_dict['epochs'], batch_size=batch_size)
+                trainer = Trainer(model, train_loader, test_loader, logs_dir=args.output, device=args.device, run_id=args.run_id, epochs=config_dict['epochs'], batch_size=batch_size, optimizer=optimizer)
                 trainer.train()

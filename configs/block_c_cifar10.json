@@ -1,13 +1,12 @@
 {
-  "models" : ["vgg11", "vgg11_S", "vgg11_XS", "vgg11_XXS", "vgg11_XXXS",
+  "models" : [
               "vgg13", "vgg13_S", "vgg13_XS", "vgg13_XXS", "vgg13_XXXS",
-              "vgg16", "vgg16_S", "vgg16_XS", "vgg16_XXS", "vgg16_XXXS",
               "vgg19", "vgg19_S", "vgg19_XS", "vgg19_XXS", "vgg19_XXXS"
   ],
 
   "dataset": "Cifar10",
   "epochs":   20,
-  "batch_sizes": [8, 32, 128, 512],
+  "batch_sizes": [32],
   "optimizer": "adam"
 
 }
