@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 import pandas as pd
 from radam import RAdam
+from time import time
 
 def now():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -57,7 +58,7 @@ class Trainer:
 
 
 
-        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=1, device=device)
+        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=1, device=device, reset_covariance=True, max_samples=5000)
 
     def train(self):
         if self.experiment_done:
@@ -78,9 +79,11 @@ class Trainer:
         correct = 0
         total = 0
         running_loss = 0
+        old_time = time()
         for batch, data in enumerate(self.train_loader):
             if batch%100 == 0:
-                print(batch, 'of', len(self.train_loader))
+                print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time)
+                old_time = time()
             inputs, labels = data
             inputs, labels = inputs.to(self.device), labels.to(self.device)
 

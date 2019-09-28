@@ -373,11 +373,11 @@ def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=4, pin_memory=True)
+                                              shuffle=True, num_workers=8, pin_memory=True)
     testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=4, pin_memory=True)
+                                             shuffle=False, num_workers=8, pin_memory=True)
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10
 
@@ -402,11 +402,11 @@ def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.CIFAR100(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=4)
+                                              shuffle=True, num_workers=8)
     testset = torchvision.datasets.CIFAR100(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=4)
+                                             shuffle=False, num_workers=8)
     train_loader.name = "Cifar100"
     return train_loader, test_loader, (32,32), 100
 
@@ -416,12 +416,12 @@ def ImageNet(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     trainset = torchvision.datasets.ImageNet(root=cache_dir, split='train',
                                              download=True);
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                               shuffle=True, num_workers=4)
+                                               shuffle=True, num_workers=8)
 
     testset = torchvision.datasets.ImageNet(root=cache_dir, split='test',
                                             download=True);
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=4)
+                                             shuffle=False, num_workers=8)
     train_loader.name = "ImageNet"
     return train_loader, test_loader
 

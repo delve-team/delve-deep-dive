@@ -8,6 +8,6 @@
   "dataset": "Cifar10",
   "epochs":   20,
   "batch_sizes": [8, 32, 128, 512],
-  "optimizer": "radam"
+  "optimizer": "SGD"
 
 }
