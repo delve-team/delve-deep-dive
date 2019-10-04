@@ -27,6 +27,7 @@ def extract_layer_saturation(df, excluded='classifier-6', epoch=19):
 
 
 def plot_saturation_level(df, acc=-1, savepath='run.png', epoch=0):
+    plt.clf()
     ax = plt.gca()
     cols = list(df.columns)
     col_names = [i+1 for i in range(len(df.columns))]
