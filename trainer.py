@@ -8,15 +8,17 @@ from datetime import datetime
 import pandas as pd
 from radam import RAdam
 from time import time
+from saturation_plotter import plot_saturation_level_from_results
 
 def now():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 class Trainer:
 
-    def __init__(self, model, train_loader, test_loader, epochs=200, batch_size=60, run_id=0, logs_dir='logs', device='cpu', optimizer='None'):
+    def __init__(self, model, train_loader, test_loader, epochs=200, batch_size=60, run_id=0, logs_dir='logs', device='cpu', optimizer='None', plot=True):
         self.device = device
         self.model = model
         self.epochs = epochs
+        self.plot = plot
 
         if 'cuda' in device:
             cudnn.benchmark = True
@@ -57,8 +59,8 @@ class Trainer:
                 print('Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
 
 
-
-        self.stats = CheckLayerSat(os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}'), 'csv', model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=1, device=device, reset_covariance=True, max_samples=5000)
+        self.savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}')
+        self.stats = CheckLayerSat(self.savepath, 'csv', model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=1, device=device, reset_covariance=False, max_samples=None)
 
     def train(self):
         if self.experiment_done:
@@ -72,7 +74,10 @@ class Trainer:
                 self.lr_scheduler.step()
             self.stats.add_saturations()
             self.stats.save()
+            if self.plot:
+                plot_saturation_level_from_results(self.savepath, epoch)
         self.stats.close()
+        return self.savepath+'.csv'
 
     def train_epoch(self):
         self.model.train()
