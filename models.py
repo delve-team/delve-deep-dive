@@ -121,12 +121,75 @@ cfg = {
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'E2': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 'M'],
     'E3': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
+    'E4': [256, 256, 256, 256, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
+    'E5': [512, 256, 256, 256, 'M', 512, 256, 256, 'M', 512, 512, 1024, 'M'],
+    'E6': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
+    'E7': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
 
     'ES': [32, 32, 'M', 64, 64, 'M', 128, 128, 128, 128, 'M', 256, 256, 256, 256, 'M', 256, 256, 256, 256, 'M'],
     'EXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 64, 'M', 128, 128, 128, 128, 'M', 128, 128, 128, 128, 'M'],
     'EXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 32, 'M', 64, 64, 64, 64, 'M', 64, 64, 64, 64, 'M'],
     'EXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 16, 16, 'M', 32, 32, 32, 32, 'M', 32, 32, 32, 32, 'M'],
 }
+
+
+def vggO8(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, pool_size=6, **kwargs)
+    model.name = "VGGo8"
+    return model
+
+def vggO6_100(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, **kwargs)
+    model.name = "VGGo6_100"
+    return model
+
+def vggO7(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E7']), final_filter=1024, linear_layer=1024)
+    model.name = "VGGo7"
+    return model
+
+
+def vggO6(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E6']), final_filter=1024)
+    model.name = "VGGo6"
+    return model
+
+
+def vggO5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=512, **kwargs)
+    model.name = "VGGo5"
+    return model
+
+
+def vggO4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E4']), **kwargs)
+    model.name = "VGGo4"
+    return model
+
 
 
 def vggO3(*args, **kwargs):
@@ -168,19 +231,21 @@ def make_layers(cfg, batch_norm=True, k_size=3):
 class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
-                 final_filter: int = 512, pretrained=False,
-                 input_size=(32,32)):
+                 final_filter: int = 512, linear_layer=None, pretrained=False,
+                 input_size=(32,32), pool_size=1):
         super(VGG, self).__init__()
+        if linear_layer is None:
+            linear_layer = final_filter // 2
         self.features = features
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.avgpool = nn.AdaptiveAvgPool2d(pool_size)
         self.classifier = nn.Sequential(
-            nn.BatchNorm1d(final_filter),
+            nn.BatchNorm1d(final_filter*(pool_size**2)),
             nn.Dropout(0.25),
-            nn.Linear(final_filter, final_filter//2),
+            nn.Linear(final_filter*(pool_size**2), linear_layer),
             nn.ReLU(True),
-            nn.BatchNorm1d(final_filter//2),
+            nn.BatchNorm1d(linear_layer),
             nn.Dropout(0.25),
-            nn.Linear(final_filter//2, num_classes)
+            nn.Linear(linear_layer, num_classes)
         )
         if init_weights:
             self._initialize_weights()
