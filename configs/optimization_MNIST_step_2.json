@@ -1,8 +1,9 @@
 {
-  "models" : ["vggO3"],
+  "models" : ["mnet2"],
 
-  "dataset": "Cifar10",
+  "dataset": "MNIST",
   "epochs":   25,
   "batch_sizes": [32],
   "optimizer": "adam"
+
 }

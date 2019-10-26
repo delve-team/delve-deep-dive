@@ -2,6 +2,7 @@ import argparse
 import models
 import datasets
 import json
+import torch
 import sys
 import types
 
@@ -15,6 +16,7 @@ parser.add_argument('-o', '--output', dest='output', action='store', default='lo
 parser.add_argument('-c', '--compute-device', dest='device', action='store', default='cpu')
 parser.add_argument('-r', '--run_id', dest='run_id', action='store', default=0)
 parser.add_argument('-cf', '--config', dest='json_file', action='store', default=None)
+parser.add_argument('-cs' '--saturation-device', dest='sat_device', type=str, default=None, action='store')
 
 
 def parse_model(model_name, shape, num_classes):
@@ -52,5 +54,17 @@ if __name__ == '__main__':
                 print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
                 train_loader, test_loader, shape, num_classes = parse_dataset(config_dict['dataset'], batch_size)
                 model = parse_model(model, shape, num_classes)
-                trainer = Trainer(model, train_loader, test_loader, logs_dir=args.output, device=args.device, run_id=args.run_id, epochs=config_dict['epochs'], batch_size=batch_size, optimizer=optimizer)
+                trainer = Trainer(model,
+                                  train_loader,
+                                  test_loader,
+                                  logs_dir=args.output,
+                                  device=args.device,
+                                  run_id=args.run_id,
+                                  epochs=config_dict['epochs'],
+                                  batch_size=batch_size,
+                                  optimizer=optimizer,
+                                  plot=True,
+                                  compute_top_k=True if config_dict['dataset'] == 'ImageNet' else False,
+                                  data_prallel=False if torch.cuda.device_count() > 1 and config_dict['dataset'] == 'ImageNet' else False,
+                                  saturation_device=args.sat_device)
                 trainer.train()

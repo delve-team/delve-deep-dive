@@ -1,0 +1,9 @@
+{
+  "models" : ["ImNet3"],
+
+  "dataset": "TinyImageNet",
+  "epochs":   25,
+  "batch_sizes": [64],
+  "optimizer": "radam"
+
+}

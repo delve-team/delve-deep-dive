@@ -1,0 +1,9 @@
+{
+  "models" : ["ResNet50"],
+
+  "dataset": "Food101",
+  "epochs":   50,
+  "batch_sizes": [32],
+  "optimizer": "adam"
+
+}

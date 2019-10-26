@@ -1,5 +1,5 @@
 {
-  "models" : ["vggO3"],
+  "models" : ["vggO5"],
 
   "dataset": "Cifar10",
   "epochs":   25,

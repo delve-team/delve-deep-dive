@@ -1,0 +1,9 @@
+{
+  "models" : ["vggO6_100_regression"],
+
+  "dataset": "Cifar100",
+  "epochs":   50,
+  "batch_sizes": [32],
+  "optimizer": "radam"
+
+}

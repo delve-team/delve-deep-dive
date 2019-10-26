@@ -1,0 +1,9 @@
+{
+  "models" : ["ResNet18"],
+
+  "dataset": "ImageNet",
+  "epochs":   100,
+  "batch_sizes": [64],
+  "optimizer": "radam"
+
+}

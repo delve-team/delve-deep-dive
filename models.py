@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
@@ -35,6 +36,11 @@ def ResNet18(input_size=(32,32), num_classes=10):
     model.name = "ResNet18"
     return model
 
+def ResNet120(input_size=(32, 32), num_classes=10):
+    model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+    model.name = "ResNet16"
+    return model
+
 def ResNet34(input_size=(32,32), num_classes=10):
     model = torchvision.models.resnet.resnet34(num_classes=num_classes)
     model.name = "ResNet34"
@@ -42,7 +48,7 @@ def ResNet34(input_size=(32,32), num_classes=10):
 
 def ResNet50(input_size=(32,32), num_classes=10):
     model = torchvision.models.resnet.resnet50(num_classes=num_classes)
-    model.name = "ResNet34"
+    model.name = "ResNet50"
     return model
 
 def ResNet101(input_size=(32,32), num_classes=10):
@@ -121,12 +127,230 @@ cfg = {
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'E2': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 'M'],
     'E3': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
+    'E4': [256, 256, 256, 256, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
+    'E5': [512, 256, 256, 256, 'M', 512, 256, 256, 'M', 512, 512, 1024, 'M'],
+    'E6': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
+    'E7': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
+
+    "mnist": [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M'],
+    "mnist2": [64, 64, 'M', 128, 128, 'M', 256, 'M'],
+
+    'food1': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M'],
+    'food2': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
+    'food3': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'food4': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M', 512, 512, 'M'],
+
+    'tiny_imgnet':  [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M', 512, 512, 'M'],
+    'tiny_imgnet2':  [64, 64, 'M', 256, 256, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M'],
+    'tiny_imgnet3':  [64, 64, 'M', 256, 256, 'M', 256, 256, 256, 256, 'M', 512, 512, 1024, 1024, 'M'],
+    'tiny_imgnet4b':  [64, 64, 'M', 256, 256, 'M', 256, 256, 'M', 256, 256, 'M', 512, 512, 'M', 1024, 1024, 'M'],
+    'tiny_imgnet4':  [128, 128, 256, 256, 'M', 256, 256, 256, 256, 'M', 512, 512, 1024, 1024, 'M'],
+    'tiny_imgnet5':  [128, 128, 256, 256, 256, 256, 256, 256, 'M', 512, 512, 1024, 1024, 'M'],
+    'tiny_imgnet5b':  [256, 128, 'M', 512, 256, 256, 256, 256, 256, 'M', 1024, 512, 1024, 1024, 'M'],
 
     'ES': [32, 32, 'M', 64, 64, 'M', 128, 128, 128, 128, 'M', 256, 256, 256, 256, 'M', 256, 256, 256, 256, 'M'],
     'EXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 64, 'M', 128, 128, 128, 128, 'M', 128, 128, 128, 128, 'M'],
     'EXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 32, 'M', 64, 64, 64, 64, 'M', 64, 64, 64, 64, 'M'],
     'EXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 16, 16, 'M', 32, 32, 32, 32, 'M', 32, 32, 32, 32, 'M'],
 }
+
+
+def ImNet5b(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet5b']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "ImNet5b"
+    return model
+
+
+def ImNet5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet5']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "ImNet5"
+    return model
+
+
+def ImNet4b(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet4b']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "ImNet4b"
+    return model
+
+
+def ImNet4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet4']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "ImNet4"
+    return model
+
+
+
+def ImNet3(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet3']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "ImNet3"
+    return model
+
+
+def ImNet2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet2']), pool_size=1, **kwargs)
+    model.name = "ImNet2"
+    return model
+
+
+def ImNet1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['tiny_imgnet']), pool_size=1, **kwargs)
+    model.name = "ImNet1"
+    return model
+
+
+def FoodNet5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['food4']), pool_size=1, linear_layer=512, **kwargs)
+    model.name = "FoodNet4"
+    return model
+
+
+def FoodNet4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['food3']), pool_size=1, linear_layer=512, **kwargs)
+    model.name = "FoodNet4"
+    return model
+
+
+def FoodNet3(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['food1']), pool_size=6, linear_layer=4096, **kwargs)
+    model.name = "FoodNet3"
+    return model
+
+
+def FoodNet2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['food2']), pool_size=6, linear_layer=4096, **kwargs)
+    model.name = "FoodNet2"
+    return model
+
+def FoodNet1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['food1']), pool_size=6, linear_layer=4096, **kwargs)
+    model.name = "FoodNet1"
+    return model
+
+
+def vggO8(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, pool_size=6, **kwargs)
+    model.name = "VGGo8"
+    return model
+
+def vggO6_100(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, **kwargs)
+    model.name = "VGGo6_100"
+    return model
+
+
+def vggO6_1000(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, **kwargs)
+    model.name = "VGGo6_1000"
+    return model
+
+def vggO6_100_regression(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=1024, regress=True, **kwargs)
+    model.name = "VGGo6_100"
+    return model
+
+def vggO7(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E7']), final_filter=1024, linear_layer=1024)
+    model.name = "VGGo7"
+    return model
+
+
+def vggO6(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E6']), final_filter=1024)
+    model.name = "VGGo6"
+    return model
+
+
+def vggO5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E5']), final_filter=1024, linear_layer=512, **kwargs)
+    model.name = "VGGo5"
+    return model
+
+
+def vggO4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E4']), **kwargs)
+    model.name = "VGGo4"
+    return model
+
 
 
 def vggO3(*args, **kwargs):
@@ -149,9 +373,8 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3):
     layers = []
-    in_channels = 3
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
@@ -168,19 +391,25 @@ def make_layers(cfg, batch_norm=True, k_size=3):
 class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
-                 final_filter: int = 512, pretrained=False,
-                 input_size=(32,32)):
+                 final_filter: int = 512, linear_layer=None, pretrained=False,
+                 input_size=(32,32), pool_size=1, regress=False):
         super(VGG, self).__init__()
+        if regress:
+            self.scale_factor = num_classes
+            num_classes = 1
+        self.regress = regress
+        if linear_layer is None:
+            linear_layer = final_filter // 2
         self.features = features
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.avgpool = nn.AdaptiveAvgPool2d(pool_size)
         self.classifier = nn.Sequential(
-            nn.BatchNorm1d(final_filter),
+            nn.BatchNorm1d(final_filter*(pool_size**2)),
             nn.Dropout(0.25),
-            nn.Linear(final_filter, final_filter//2),
+            nn.Linear(final_filter*(pool_size**2), linear_layer),
             nn.ReLU(True),
-            nn.BatchNorm1d(final_filter//2),
+            nn.BatchNorm1d(linear_layer),
             nn.Dropout(0.25),
-            nn.Linear(final_filter//2, num_classes)
+            nn.Linear(linear_layer, num_classes)
         )
         if init_weights:
             self._initialize_weights()
@@ -190,6 +419,10 @@ class VGG(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
+        if self.regress:
+            x = x*self.scale_factor
+            x = torch.round(x)
+            x = x.view(x.size(0), -1)
         return x
 
     def _initialize_weights(self):
@@ -512,6 +745,33 @@ def vgg19(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['E']), **kwargs)
     model.name = "VGG19"
+    return model
+
+def vgg19m(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E'], in_channels=1), **kwargs)
+    model.name = "VGG19m"
+    return model
+
+def mnet2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist2'], in_channels=1), final_filter=256, **kwargs)
+    model.name = "mnet2"
+    return model
+
+def mnet1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist'], in_channels=1), final_filter=256, **kwargs)
+    model.name = "mnet1"
     return model
 
 def vgg19_S(*args, **kwargs):
