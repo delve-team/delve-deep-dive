@@ -42,7 +42,8 @@ class Trainer:
                  optimizer='None',
                  plot=True,
                  compute_top_k=False,
-                 data_prallel=False):
+                 data_prallel=False,
+                 conv_method='mean'):
         self.saturation_device = device if saturation_device is None else saturation_device
         self.device = device
         self.model = model
@@ -91,7 +92,8 @@ class Trainer:
         if data_prallel:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
-        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method='mean', log_interval=1, device=device, reset_covariance=False, max_samples=None)
+        self.pooling_strat = conv_method
+        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=False, max_samples=None)
 
     def train(self):
         if self.experiment_done:
