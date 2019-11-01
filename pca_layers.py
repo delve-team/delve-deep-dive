@@ -1,5 +1,6 @@
 import torch
 from torch.nn import Module
+from torch.nn.functional import linear
 from delve.torch_utils import TorchCovarianceMatrix
 
 
@@ -16,12 +17,12 @@ class LinearPCALayer(Module):
 
     def _compute_pca_matrix(self) -> torch.Tensor:
         cov_mtrx: torch.Tensor = self._cov._cov_mtx
-        eig_val, eig_vec = cov_mtrx.eig(True)
-        sorted_eig_val, idx = eig_val.sort(0, descending=True)
-        sorted_eig_vec = eig_vec[idx]
-        percentages = eig_val.cumsum(0) / eig_val.sum(0)
-        eigen_space = sorted_eig_vec[percentages < self.threshold]
-        self.transformation_matrix: torch.Tensor = eigen_space @ eigen_space.T
+        eig_val, eig_vec = cov_mtrx.symeig(True)
+        sorted_eig_val, idx = eig_val.sort(descending=True)
+        sorted_eig_vec = eig_vec[:, idx]
+        percentages = eig_val.cumsum(0) / eig_val.sum()
+        eigen_space = sorted_eig_vec[:, percentages < self.threshold]
+        self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t())
 
     def eval(self):
         self._compute_pca_matrix()
@@ -32,7 +33,7 @@ class LinearPCALayer(Module):
             self._update_covariance(x)
             return x
         else:
-            return x @ self.transformation_matrix
+            return x @ self.transformation_matrix.t()
 
 
 class Conv2DPCALayer(Module):
@@ -56,13 +57,13 @@ class Conv2DPCALayer(Module):
 
     def _compute_pca_matrix(self):
         cov_mtrx: torch.Tensor = self._cov._cov_mtx
-        eig_val, eig_vec = cov_mtrx.eig(True)
-        sorted_eig_val, idx = eig_val.sort(0, descending=True)
-        sorted_eig_vec = eig_vec[idx]
-        percentages = eig_val.cumsum(0) / eig_val.sum(0)
-        eigen_space = sorted_eig_vec[percentages < self.threshold]
+        eig_val, eig_vec = cov_mtrx.symeig(True)
+        sorted_eig_val, idx = eig_val.sort(descending=True)
+        sorted_eig_vec = eig_vec[:, idx]
+        percentages = eig_val.cumsum(0) / eig_val.sum()
+        eigen_space = sorted_eig_vec[:, percentages < self.threshold]
         self.transformation_matrix: torch.Tensor = eigen_space @ eigen_space.T
-        weight = torch.nn.Parameter(self.transformation_matrix.unsqueeze(3).unsqueeze(4))
+        weight = torch.nn.Parameter(self.transformation_matrix.unsqueeze(2).unsqueeze(3))
         self.convolution.weight = weight
 
     def eval(self):
