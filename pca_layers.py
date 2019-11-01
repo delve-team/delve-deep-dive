@@ -34,6 +34,7 @@ class LinearPCALayer(Module):
         else:
             return x @ self.transformation_matrix
 
+
 class Conv2DPCALayer(Module):
 
     def __init__(self, threshold: float = 0.99):
