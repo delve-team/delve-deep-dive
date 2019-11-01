@@ -1,0 +1,10 @@
+{
+  "models" : ["CNet1"],
+
+  "dataset": "Cifar10",
+  "epochs":   300,
+  "batch_sizes": [32],
+  "optimizer": "radam",
+  "conv_method": "channelwise"
+
+}

@@ -1,0 +1,10 @@
+{
+  "models" : ["mnet5"],
+
+  "dataset": "MNIST",
+  "epochs":   25,
+  "batch_sizes": [512],
+  "optimizer": "adam",
+  "conv_method": "mean"
+
+}

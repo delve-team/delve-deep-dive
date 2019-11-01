@@ -132,8 +132,16 @@ cfg = {
     'E6': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
     'E7': [512, 256, 256, 256, 512, 256, 256, 512, 512, 1024],
 
+    'CNet0': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M'],
+    'CNet1': [128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'CNet2': [64, 64, 'M', 256, 256, 'M', 512, 512, 'M', 1024, 1024, 'M'],
+
     "mnist": [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M'],
     "mnist2": [64, 64, 'M', 128, 128, 'M', 256, 'M'],
+    "mnist3": [16, 16, 'M', 24, 24, 'M', 32, 32, 'M'],
+    "mnist4": [64, 64, 'M', 128, 128, 'M', 256, 256, 'M'],
+    "mnist5b": [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    "mnist5": [64, 128, 'M', 512, 512, 'M', 512, 512, 'M'],
 
     'food1': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M'],
     'food2': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
@@ -153,6 +161,37 @@ cfg = {
     'EXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 32, 'M', 64, 64, 64, 64, 'M', 64, 64, 64, 64, 'M'],
     'EXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 16, 16, 'M', 32, 32, 32, 32, 'M', 32, 32, 32, 32, 'M'],
 }
+
+
+
+def CNet2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['CNet2']), pool_size=1, final_filter=1024, **kwargs)
+    model.name = "CNet2"
+    return model
+
+
+def CNet1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['CNet1']), pool_size=1, final_filter=512, **kwargs)
+    model.name = "CNet1"
+    return model
+
+
+def CNet0(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['CNet0']), pool_size=1, final_filter=256, **kwargs)
+    model.name = "CNet0"
+    return model
 
 
 def ImNet5b(*args, **kwargs):
@@ -187,6 +226,7 @@ def ImNet4b(*args, **kwargs):
 
 def ImNet4(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
+    Args:
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
@@ -754,6 +794,42 @@ def vgg19m(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['E'], in_channels=1), **kwargs)
     model.name = "VGG19m"
+    return model
+
+def mnet5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist5'], in_channels=1), final_filter=512, **kwargs)
+    model.name = "mnet5"
+    return model
+
+def mnet5b(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist5b'], in_channels=1), final_filter=512, **kwargs)
+    model.name = "mnet5b"
+    return model
+
+def mnet4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist4'], in_channels=1), final_filter=256, **kwargs)
+    model.name = "mnet4"
+    return model
+
+def mnet3(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['mnist3'], in_channels=1), final_filter=32, **kwargs)
+    model.name = "mnet3"
     return model
 
 def mnet2(*args, **kwargs):

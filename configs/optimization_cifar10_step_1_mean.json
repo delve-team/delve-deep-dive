@@ -1,0 +1,10 @@
+{
+  "models" : ["vgg19"],
+
+  "dataset": "Cifar10",
+  "epochs":   25,
+  "batch_sizes": [32],
+  "optimizer": "adam",
+  "conv_method": "mean"
+
+}

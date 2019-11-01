@@ -93,7 +93,7 @@ class Trainer:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
         self.pooling_strat = conv_method
-        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=False, max_samples=None)
+        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
 
     def train(self):
         if self.experiment_done:
@@ -120,7 +120,7 @@ class Trainer:
         old_time = time()
         top5_accumulator = 0
         for batch, data in enumerate(self.train_loader):
-            if batch%50 == 0 and batch != 0:
+            if batch%500 == 0 and batch != 0:
                 print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, "top5_acc:" if self.compute_top_k else 'acc:', round(top5_accumulator/(batch),3) if self.compute_top_k else correct/total)
                 old_time = time()
             inputs, labels = data
@@ -152,6 +152,7 @@ class Trainer:
         total = 0
         test_loss = 0
         top5_accumulator = 0
+        self.model.eval()
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
                 inputs, labels = data
