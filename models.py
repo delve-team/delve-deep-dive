@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torchvision
 from math import floor
 from operator import mul
+from pca_layers import Conv2DPCALayer, LinearPCALayer
 
 
 def Inception3(input_size=(32,32), num_classes=10):
@@ -183,6 +184,14 @@ def CNet1(*args, **kwargs):
     model.name = "CNet1"
     return model
 
+def CNet1PCA(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['CNet1'], pca=True), pool_size=1, final_filter=512, add_pca_layers=True, **kwargs)
+    model.name = "CNet1PCA"
+    return model
 
 def CNet0(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
@@ -413,14 +422,16 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False):
     layers = []
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=k_size-2)
-            if batch_norm:
+            if batch_norm and pca:
+                layers += [conv2d, Conv2DPCALayer(), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+            elif batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
                 layers += [conv2d, nn.ReLU(inplace=True)]
@@ -432,12 +443,13 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False):
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=False):
         super(VGG, self).__init__()
         if regress:
             self.scale_factor = num_classes
             num_classes = 1
         self.regress = regress
+        self.add_pca_layers = add_pca_layers
         if linear_layer is None:
             linear_layer = final_filter // 2
         self.features = features
@@ -446,6 +458,7 @@ class VGG(nn.Module):
             nn.BatchNorm1d(final_filter*(pool_size**2)),
             nn.Dropout(0.25),
             nn.Linear(final_filter*(pool_size**2), linear_layer),
+            LinearPCALayer(),
             nn.ReLU(True),
             nn.BatchNorm1d(linear_layer),
             nn.Dropout(0.25),

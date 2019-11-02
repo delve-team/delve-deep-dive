@@ -152,7 +152,6 @@ class Trainer:
         total = 0
         test_loss = 0
         top5_accumulator = 0
-        self.model.eval()
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
                 inputs, labels = data
