@@ -3,7 +3,7 @@
     "tiny_cae"
   ],
 
-  "dataset": "Cifar10",
+  "dataset": "Food101",
   "epochs":   20,
   "batch_sizes": [32],
   "optimizer": "adam"

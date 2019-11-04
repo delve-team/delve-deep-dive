@@ -86,6 +86,7 @@ class Trainer:
         self.model.to(self.device)
         for epoch in range(self.epochs):
             print("{} Epoch {}, training loss: {}".format(now(), epoch, self.train_epoch()))
+            torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))
             self.test()
             if self.opt_name == "LRS":
                 print('LRS step')
@@ -136,3 +137,4 @@ class Trainer:
 
         self.stats.add_scalar('test_loss', test_loss/total)
         print('{} Test Loss on {} images: {:.2f}'.format(now(), total, test_loss/total))
+        torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))

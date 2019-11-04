@@ -290,7 +290,7 @@ class Food101Dataset(Dataset):
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
 
-def Food101(batch_size=12, output_size=(224,224),
+def Food101(batch_size=12, output_size=(112,112),
                         cache_dir='tmp', selected_classes=list()):
     # dataset = Food101Dataset(cache_dir)
     # dataset.init(selected_classes=selected_classes)
