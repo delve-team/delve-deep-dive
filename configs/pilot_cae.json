@@ -1,0 +1,11 @@
+{
+  "models" : [
+    "tiny_cae"
+  ],
+
+  "dataset": "Cifar10",
+  "epochs":   20,
+  "batch_sizes": [32],
+  "optimizer": "adam"
+
+}

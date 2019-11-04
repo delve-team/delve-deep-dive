@@ -1,17 +1,17 @@
 import torch
 from torch.nn import Module
-from torch.nn.functional import linear
 from delve.torch_utils import TorchCovarianceMatrix
 
 
 class LinearPCALayer(Module):
 
-    def __init__(self, threshold: float = .99):
+    def __init__(self, threshold: float = .99, keepdim=True):
         super(LinearPCALayer, self).__init__()
         self.transformation_matrix = None
         self._cov = TorchCovarianceMatrix()
         self.threshold = threshold
         self.pca_computed = False
+        self.keepdim = keepdim
 
     def _update_covariance(self, x: torch.Tensor) -> None:
         self._cov.update(x)
@@ -27,6 +27,7 @@ class LinearPCALayer(Module):
         eigen_space = sorted_eig_vec[:, percentages < self.threshold]
         print(f'Saturation: {round(eigen_space.shape[1] / eig_val.shape[0], 4)}%', 'Eigenspace has shape', eigen_space.shape)
         self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t())
+        self.reduced_transformation_matrix: torch.Tensor = eigen_space
 
     def forward(self, x):
         if self.training:
@@ -37,7 +38,10 @@ class LinearPCALayer(Module):
             if not self.pca_computed:
                 self._compute_pca_matrix()
                 self.pca_computed = True
-            return x @ self.transformation_matrix.t()
+            if self.keepdim:
+                return x @ self.transformation_matrix.t()
+            else:
+                return x @ self.reduced_transformation_matrix
 
 
 class Conv2DPCALayer(Module):

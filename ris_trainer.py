@@ -9,22 +9,6 @@ from datetime import datetime
 import pandas as pd
 from radam import RAdam
 from time import time
-from saturation_plotter import plot_saturation_level_from_results
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
-    maxk = max(topk)
-    batch_size = target.size(0)
-
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-    res = []
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
-        res.append(correct_k.mul_(100.0 / batch_size).item())
-    return res
 
 def now():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -59,9 +43,8 @@ class Trainer:
         self.train_loader = train_loader
         self.test_loader = test_loader
 
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.MSELoss()
         print('Checking for optimizer for {}'.format(optimizer))
-        #optimizer = str(optimizer)
         if optimizer == "adam":
             print('Using adam')
             self.optimizer = optim.Adam(model.parameters())
@@ -93,7 +76,7 @@ class Trainer:
         self.parallel = data_prallel
         if data_prallel:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
-        writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
+        writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_loss')
         self.pooling_strat = conv_method
         self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
 
@@ -102,76 +85,54 @@ class Trainer:
             return
         self.model.to(self.device)
         for epoch in range(self.epochs):
-            print("{} Epoch {}, training loss: {}, training accuracy: {}".format(now(), epoch, *self.train_epoch()))
+            print("{} Epoch {}, training loss: {}".format(now(), epoch, self.train_epoch()))
             self.test()
             if self.opt_name == "LRS":
                 print('LRS step')
                 self.lr_scheduler.step()
             self.stats.add_saturations()
-            #self.stats.save()
-            #if self.plot:
             #    plot_saturation_level_from_results(self.savepath, epoch)
         self.stats.close()
         return self.savepath+'.csv'
 
     def train_epoch(self):
         self.model.train()
-        correct = 0
         total = 0
         running_loss = 0
         old_time = time()
-        top5_accumulator = 0
         for batch, data in enumerate(self.train_loader):
             if batch%500 == 0 and batch != 0:
-                print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, "top5_acc:" if self.compute_top_k else 'acc:', round(top5_accumulator/(batch),3) if self.compute_top_k else correct/total)
+                print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, 'loss:', running_loss/total)
                 old_time = time()
-            inputs, labels = data
-            inputs, labels = inputs.to(self.device), labels.to(self.device)
+            inputs, _ = data
+            inputs = inputs.to(self.device)
+            total += inputs.size(0)
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
-            if self.compute_top_k:
-                top5_accumulator += accuracy(outputs, labels, (5,))[0]
             _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
 
-            correct += (predicted == labels).sum().item()
-            loss = self.criterion(outputs, labels)
+            loss = self.criterion(outputs, inputs)
             loss.backward()
             self.optimizer.step()
 
             running_loss += loss.item()
         self.stats.add_scalar('training_loss', running_loss/total)
-        if self.compute_top_k:
-            self.stats.add_scalar('training_accuracy', (top5_accumulator/(batch+1)))
-        else:
-            self.stats.add_scalar('training_accuracy', correct/total)
-        return running_loss/total, correct/total
+        return running_loss/total
 
     def test(self):
         self.model.eval()
-        correct = 0
         total = 0
         test_loss = 0
-        top5_accumulator = 0
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
-                inputs, labels = data
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                inputs, _ = data
+                inputs = inputs.to(self.device)
                 outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
+                loss = self.criterion(outputs, inputs)
                 _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-                if self.compute_top_k:
-                    top5_accumulator += accuracy(outputs, labels, (5,))[0]
                 test_loss += loss.item()
+                total += inputs.size(0)
 
         self.stats.add_scalar('test_loss', test_loss/total)
-        if self.compute_top_k:
-            self.stats.add_scalar('test_accuracy', top5_accumulator/(batch+1))
-            print('{} Test Top5-Accuracy on {} images: {:.2f}'.format(now(), total, top5_accumulator/(batch+1)))
-
-        else:
-            self.stats.add_scalar('test_accuracy', correct/total)
-            print('{} Test Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))
+        print('{} Test Loss on {} images: {:.2f}'.format(now(), total, test_loss/total))
