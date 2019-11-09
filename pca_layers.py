@@ -36,11 +36,11 @@ class LinearPCALayer(Module):
 
     def _compute_covariance(self) -> torch.Tensor:
         tlen = self.seen_samples
-        avg = self.running_sum / tlen
+        avg = self.running_sum #/ tlen
         cov_mtx = self.covariance_matrix
         cov_mtx /= tlen - 1
         avg_mtx = torch.ger(avg, avg)
-        #avg_mtx /= tlen * (tlen - 1)
+        avg_mtx /= tlen * (tlen - 1)
         cov_mtx -= avg_mtx
         return cov_mtx
 
@@ -103,6 +103,8 @@ class Conv2DPCALayer(LinearPCALayer):
     def forward(self, x):
         if self.training:
             self.pca_computed = False
+            #print(x.shape)
+            #print(x.detach().cpu().numpy())
             swapped: torch.Tensor = x.permute([1, 0, 2, 3])
             flattened: torch.Tensor = swapped.flatten(1)
             reshaped_batch: torch.Tensor = flattened.permute([1, 0])

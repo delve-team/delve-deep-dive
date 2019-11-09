@@ -45,7 +45,7 @@ class Trainer:
                  plot=True,
                  compute_top_k=False,
                  data_prallel=False,
-                 conv_method='mean'):
+                 conv_method='channelwise'):
         self.saturation_device = device if saturation_device is None else saturation_device
         self.device = device
         self.model = model

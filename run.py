@@ -54,7 +54,7 @@ if __name__ == '__main__':
                 print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
                 train_loader, test_loader, shape, num_classes = parse_dataset(config_dict['dataset'], batch_size)
                 model = parse_model(model, shape, num_classes)
-                conv_method = 'mean' if 'conv_method' not in config_dict else config_dict['conv_method']
+                conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
                 trainer = Trainer(model,
                                   train_loader,
                                   test_loader,
