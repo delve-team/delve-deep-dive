@@ -1,11 +1,11 @@
 {
   "models" : [
-              "vgg13", "vgg13PCA"
+    "vgg13PCA"
   ],
 
   "dataset": "Cifar10",
-  "epochs":   30,
-  "batch_sizes": [32],
+  "epochs":   20,
+  "batch_sizes": [128],
   "optimizer": "adam"
 
 }

@@ -422,7 +422,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False, thresh=.99):
     layers = []
     for v in cfg:
         if v == 'M':
@@ -430,7 +430,7 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False):
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=k_size-2)
             if batch_norm and pca:
-                layers += [conv2d, Conv2DPCALayer(), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             elif batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -441,13 +441,13 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False):
 
 class TinyCAE(nn.Module):
 
-    def __init__(self, use_pca: bool = True):
+    def __init__(self, use_pca: bool = True, thresh = .99):
         super(TinyCAE, self).__init__()
         self.use_pca = use_pca
         self.encoding_mode = False
         self.decoder = self.get_decoder()
         self.use_pca = use_pca
-        self.pca_layer = LinearPCALayer(keepdim=False)
+        self.pca_layer = LinearPCALayer(keepdim=False, threshold=thresh)
         self.encoder = self.get_encoder()
         self._initialize_weights()
 
@@ -516,7 +516,7 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=False):
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=False, thresh=.99):
         super(VGG, self).__init__()
         if regress:
             self.scale_factor = num_classes
@@ -532,7 +532,7 @@ class VGG(nn.Module):
                 nn.BatchNorm1d(final_filter*(pool_size**2)),
                 nn.Dropout(0.25),
                 nn.Linear(final_filter*(pool_size**2), linear_layer),
-                LinearPCALayer(),
+                LinearPCALayer(linear_layer),
                 nn.ReLU(True),
                 nn.BatchNorm1d(linear_layer),
                 nn.Dropout(0.25),
@@ -846,6 +846,181 @@ def vgg13PCA(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['B'], pca=True), add_pca_layers=True, **kwargs)
     model.name = "VGG13PCA"
+    return model
+
+def vgg13PCA98(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .98
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA98"
+    return model
+
+
+def vgg13PCA97(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .97
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA97"
+    return model
+
+
+def vgg13PCA96(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .96
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA96"
+    return model
+
+
+def vgg13PCA95(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .95
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA95"
+    return model
+
+
+def vgg13PCA94(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .94
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA94"
+    return model
+
+
+def vgg13PCA93(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .93
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA93"
+    return model
+
+
+def vgg13PCA92(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .92
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA92"
+    return model
+
+
+def vgg13PCA91(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .91
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA91"
+    return model
+
+
+def vgg13PCA90(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .9
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA90"
+    return model
+
+
+def vgg13PCA80(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .8
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA80"
+    return model
+
+
+def vgg13PCA70(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .7
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA70"
+    return model
+
+
+def vgg13PCA60(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .6
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PC60"
+    return model
+
+
+def vgg13PCA50(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .5
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA50"
+    return model
+
+
+def vgg13PCA40(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .4
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA40"
+    return model
+
+
+def vgg13PCA30(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .3
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA30"
+    return model
+
+
+def vgg13PCA20(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    thresh = .2
+    model = VGG(make_layers(cfg['B'], pca=True, thresh=thresh), add_pca_layers=True, thresh=thresh, **kwargs)
+    model.name = "VGG13PCA20"
     return model
 
 def vgg13_S(*args, **kwargs):

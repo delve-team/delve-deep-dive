@@ -122,7 +122,7 @@ class Trainer:
         old_time = time()
         top5_accumulator = 0
         for batch, data in enumerate(self.train_loader):
-            if batch%500 == 0 and batch != 0:
+            if batch%1 == 0 and batch != 0:
                 print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, "top5_acc:" if self.compute_top_k else 'acc:', round(top5_accumulator/(batch),3) if self.compute_top_k else correct/total)
                 old_time = time()
             inputs, labels = data
