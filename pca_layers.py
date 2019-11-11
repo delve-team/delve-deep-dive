@@ -60,7 +60,7 @@ class LinearPCALayer(Module):
         eigen_space = self.eigenvectors[:, percentages < self.threshold]
         if eigen_space.shape[1] == 0:
             eigen_space = self.eigenvectors[:, 0]
-        if self.threshold - (percentages[percentages < self.threshold][-1]) > 0.02:
+        elif self.threshold - (percentages[percentages < self.threshold][-1]) > 0.02:
             print(f'Highest cumvar99 is {percentages[percentages < self.threshold][-1]}, extending eigenspace by one dimension for eigenspace of {eigen_space.shape}')
             eigen_space = self.eigenvectors[:, :eigen_space.shape[1]+1]
 
