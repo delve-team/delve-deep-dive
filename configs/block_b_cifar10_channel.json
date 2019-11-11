@@ -1,0 +1,11 @@
+{
+  "models" : ["resnet18", "resnet34", "resnet50"
+  ],
+
+  "dataset": "Cifar10",
+  "epochs":   20,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise"
+
+}

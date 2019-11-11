@@ -58,6 +58,12 @@ class LinearPCALayer(Module):
             print('computing autorcorrelation for Linear')
         percentages = self.eigenvalues.cumsum(0) / self.eigenvalues.sum()
         eigen_space = self.eigenvectors[:, percentages < self.threshold]
+        if eigen_space.shape[1] == 0:
+            eigen_space = self.eigenvectors[:, 0]
+        if self.threshold - (percentages[percentages < self.threshold][-1]) > 0.02:
+            print(f'Highest cumvar99 is {percentages[percentages < self.threshold][-1]}, extending eigenspace by one dimension for eigenspace of {eigen_space.shape}')
+            eigen_space = self.eigenvectors[:, :eigen_space.shape[1]+1]
+
         if self.verbose:
             print(f'Saturation: {round(eigen_space.shape[1] / self.eigenvalues.shape[0], 4)}%', 'Eigenspace has shape', eigen_space.shape)
         self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t())
