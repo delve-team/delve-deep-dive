@@ -46,7 +46,8 @@ class Trainer:
                  plot=True,
                  compute_top_k=False,
                  data_prallel=False,
-                 conv_method='channelwise'):
+                 conv_method='channelwise',
+                 thresh=.99):
         self.saturation_device = device if saturation_device is None else saturation_device
         self.device = device
         self.model = model
@@ -83,7 +84,7 @@ class Trainer:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        self.savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_id{run_id}.csv')
+        self.savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_t{int(thresh*1000)}_id{run_id}.csv')
         self.experiment_done = False
         if os.path.exists(self.savepath):
             trained_epochs = len(pd.read_csv(self.savepath, sep=';'))
@@ -96,7 +97,7 @@ class Trainer:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
         self.pooling_strat = conv_method
-        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
+        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, ignore_layer_names='pca', stats=['lsat'], sat_threshold=thresh, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
 
     def train(self):
         if self.experiment_done:
@@ -123,7 +124,7 @@ class Trainer:
         old_time = time()
         top5_accumulator = 0
         for batch, data in enumerate(self.train_loader):
-            if batch%1 == 0 and batch != 0:
+            if batch%500 == 0 and batch != 0:
                 print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, "top5_acc:" if self.compute_top_k else 'acc:', round(top5_accumulator/(batch),3) if self.compute_top_k else correct/total)
                 old_time = time()
             inputs, labels = data

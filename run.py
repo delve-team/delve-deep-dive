@@ -5,6 +5,7 @@ import json
 import torch
 import sys
 import types
+from gradient_pca_layers import change_all_pca_layer_thresholds
 
 from trainer import Trainer
 
@@ -46,27 +47,34 @@ if __name__ == '__main__':
     else:
         print('Automatized experiment schedule enabled using', args.json_file)
         config_dict = json.load(open(args.json_file, 'r'))
+        thresholds = [.99] if not 'threshs' in config_dict else config_dict['threshs']
+        dss = config_dict['dataset'] if isinstance(config_dict['dataset'], list) else [config_dict['dataset']]
         optimizer = config_dict['optimizer']
         run_num = 0
-        for batch_size in config_dict['batch_sizes']:
-            for model in config_dict['models']:
-                run_num += 1
-                print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']))
-                train_loader, test_loader, shape, num_classes = parse_dataset(config_dict['dataset'], batch_size)
-                model = parse_model(model, shape, num_classes)
-                conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
-                trainer = Trainer(model,
-                                  train_loader,
-                                  test_loader,
-                                  logs_dir=args.output,
-                                  device=args.device,
-                                  run_id=args.run_id,
-                                  epochs=config_dict['epochs'],
-                                  batch_size=batch_size,
-                                  optimizer=optimizer,
-                                  plot=True,
-                                  compute_top_k=True if config_dict['dataset'] == 'ImageNet' else False,
-                                  data_prallel=False if torch.cuda.device_count() > 1 and config_dict['dataset'] == 'ImageNet' else False,
-                                  saturation_device=args.sat_device,
-                                  conv_method=conv_method)
-                trainer.train()
+        print(thresholds)
+        for dataset in dss:
+            for thresh in thresholds:
+                for batch_size in config_dict['batch_sizes']:
+                    for model in config_dict['models']:
+                        run_num += 1
+                        print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']*len(thresholds))*len(dss))
+                        train_loader, test_loader, shape, num_classes = parse_dataset(dataset, batch_size)
+                        model = parse_model(model, shape, num_classes)
+                        change_all_pca_layer_thresholds(thresh, model, verbose=True)
+                        conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
+                        trainer = Trainer(model,
+                                          train_loader,
+                                          test_loader,
+                                          logs_dir=args.output,
+                                          device=args.device,
+                                          run_id=args.run_id,
+                                          epochs=config_dict['epochs'],
+                                          batch_size=batch_size,
+                                          optimizer=optimizer,
+                                          plot=True,
+                                          compute_top_k=True if dataset == 'ImageNet' else False,
+                                          data_prallel=False if torch.cuda.device_count() > 1 and dataset == 'ImageNet' else False,
+                                          saturation_device=args.sat_device,
+                                          conv_method=conv_method,
+                                          thresh=thresh)
+                        trainer.train()

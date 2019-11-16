@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torchvision
 from math import floor
 from operator import mul
-from pca_layers import Conv2DPCALayer, LinearPCALayer
+from gradient_pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet
 
 
@@ -611,7 +611,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.99):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999):
     layers = []
     for v in cfg:
         if v == 'M':
