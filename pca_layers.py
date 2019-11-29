@@ -16,6 +16,21 @@ def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: 
                 print(f'Changed threshold for layer {module} to {threshold}')
     return sat, in_dims, fs_dims
 
+def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bool = False):
+    in_dims = []
+    fs_dims = []
+    sat = []
+    for module in network.modules():
+        if isinstance(module, Conv2DPCALayer) or isinstance(module, LinearPCALayer):
+            module.centering = centering
+            in_dims.append(module.in_dim)
+            fs_dims.append(module.fs_dim)
+            sat.append(module.sat)
+            if verbose:
+                print(f'Changed threshold for layer {module} to {centering}')
+    return sat, in_dims, fs_dims
+
+
 
 class LinearPCALayer(Module):
 
@@ -33,7 +48,7 @@ class LinearPCALayer(Module):
         self.pca_computed: bool = True
         self.gradient_epoch = gradient_epoch_start
         self.epoch = 0
-        self.centering = centering
+        self._centering = centering
 
     @property
     def threshold(self) -> float:
@@ -42,6 +57,15 @@ class LinearPCALayer(Module):
     @threshold.setter
     def threshold(self, threshold: float) -> None:
         self._threshold.data = torch.Tensor([threshold]).to(self.threshold.device)
+        self._compute_pca_matrix()
+
+    @property
+    def centering(self):
+        return self._centering
+
+    @centering.setter
+    def centering(self, centring: bool):
+        self._centering = centring
         self._compute_pca_matrix()
 
     def _update_autorcorrelation(self, x: torch.Tensor) -> None:
@@ -70,6 +94,7 @@ class LinearPCALayer(Module):
     def _reset_autorcorrelation(self):
         self.autorcorrelation_matrix.data = torch.zeros(self.autorcorrelation_matrix.shape).to(self.autorcorrelation_matrix.device)
         self.seen_samples.data = torch.zeros(self.seen_samples.shape).to(self.autorcorrelation_matrix.device)
+        self.running_sum.data = torch.zeros(self.running_sum.shape).to(self.autorcorrelation_matrix.device)
 
     def _compute_pca_matrix(self):
         if self.verbose:

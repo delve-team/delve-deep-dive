@@ -44,14 +44,16 @@ def conv1x1(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, thresh=.99, centering=False):
         super(BasicBlock, self).__init__()
+        self.thresh = thresh
+        self.centering = centering
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.convpca1 = Conv2DPCALayer(planes)
+        self.convpca1 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.convpca2 = Conv2DPCALayer(planes)
+        self.convpca2 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -80,13 +82,16 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, threshold=.999, centering=False):
         super(Bottleneck, self).__init__()
         self.conv1 = conv1x1(inplanes, planes)
+        self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes, stride)
+        self.conv2PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = conv1x1(planes, planes * self.expansion)
+        self.conv3PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn3 = nn.BatchNorm2d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -96,14 +101,17 @@ class Bottleneck(nn.Module):
         identity = x
 
         out = self.conv1(x)
+        out = self.conv1PCA(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
+        out = self.conv2PCA(out)
         out = self.bn2(out)
         out = self.relu(out)
 
         out = self.conv3(out)
+        out = self.conv3PCA(out)
         out = self.bn3(out)
 
         if self.downsample is not None:
@@ -117,19 +125,21 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, **kwargs):
+    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False,  **kwargs):
         super(ResNet, self).__init__()
         self.inplanes = 64
+        self.thresh = thresh
+        self.centering = centering
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.conv1pca = Conv2DPCALayer(64)
+        self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer1 = self._make_layer(block, 64, layers[0], threshold=thresh, centering=centering)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, threshold=thresh, centering=centering)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, threshold=thresh, centering=centering)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, threshold=thresh, centering=centering)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -150,7 +160,7 @@ class ResNet(nn.Module):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1):
+    def _make_layer(self, block, planes, blocks, stride=1, threshold=.999, centering=False):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -159,7 +169,7 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers.append(block(self.inplanes, planes, stride, downsample, threshold, centering))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes))
@@ -611,7 +621,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999, centering=False):
     layers = []
     for v in cfg:
         if v == 'M':
@@ -619,7 +629,7 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=k_size-2)
             if batch_norm and pca:
-                layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh, centering=centering), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             elif batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -630,13 +640,14 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=
 
 class TinyCAE(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .99, keepdim: bool = True):
+    def __init__(self, use_pca: bool = True, thresh = .99, keepdim: bool = True, centering=False):
         super(TinyCAE, self).__init__()
         self.use_pca = use_pca
+        self.centering = centering
         self.encoding_mode = False
         self.decoder = self.get_decoder()
         self.use_pca = use_pca
-        self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
+        self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh, centering=centering)
         self.encoder = self.get_encoder()
         self._initialize_weights()
 
@@ -703,7 +714,7 @@ def tiny_cae(*args, **kwargs):
 
 class TinyCAEPCA(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True):
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=False):
         super(TinyCAEPCA, self).__init__()
         self.use_pca = use_pca
         self.thresh = thresh
@@ -713,19 +724,20 @@ class TinyCAEPCA(nn.Module):
         self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
         self.encoder = self.get_encoder()
         self._initialize_weights()
+        self.centering = centering
 
     def get_encoder(self) -> nn.Module:
         encoder = nn.Sequential(
             nn.Conv2d(3, 16, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(16, self.thresh),
+            Conv2DPCALayer(16, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
             nn.Conv2d(16, 8, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(8, self.thresh),
+            Conv2DPCALayer(8, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
             nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(8, self.thresh),
+            Conv2DPCALayer(8, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
         )
@@ -734,15 +746,15 @@ class TinyCAEPCA(nn.Module):
     def get_decoder(self) -> nn.Module:
         decoder = nn.Sequential(
             nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(8, self.thresh),
+            Conv2DPCALayer(8, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(8, self.thresh),
+            Conv2DPCALayer(8, self.thresh,centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(8, 16, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(16, self.thresh),
+            Conv2DPCALayer(16, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(16, 3, (3, 3), stride=1, padding=1, dilation=1),
@@ -781,7 +793,7 @@ def tiny_cae_pca(*args, **kwargs):
 
 class BIGCAEPCA(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True):
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=False):
         super(BIGCAEPCA, self).__init__()
         self.use_pca = use_pca
         self.thresh = thresh
@@ -795,24 +807,24 @@ class BIGCAEPCA(nn.Module):
     def get_encoder(self) -> nn.Module:
         encoder = nn.Sequential(
             nn.Conv2d(3, 64, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(64, self.thresh),
+            Conv2DPCALayer(64, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(64, 64, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(64, self.thresh),
+            Conv2DPCALayer(64, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
             nn.Conv2d(64, 128, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(128, self.thresh),
+            Conv2DPCALayer(128, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(128, 128, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(128, self.thresh),
+            Conv2DPCALayer(128, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
             nn.Conv2d(128, 256, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(256, self.thresh),
+            Conv2DPCALayer(256, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(256, self.thresh),
+            Conv2DPCALayer(256, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.MaxPool2d((2, 2), stride=2),
         )
@@ -821,24 +833,24 @@ class BIGCAEPCA(nn.Module):
     def get_decoder(self) -> nn.Module:
         decoder = nn.Sequential(
             nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(256, self.thresh),
+            Conv2DPCALayer(256, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(256, self.thresh),
+            Conv2DPCALayer(256, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(256, 128, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(128, self.thresh),
+            Conv2DPCALayer(128, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(128, 128, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(128, self.thresh),
+            Conv2DPCALayer(128, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(128, 64, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(64, self.thresh),
+            Conv2DPCALayer(64, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.Conv2d(64, 64, (3, 3), stride=1, padding=1, dilation=1),
-            Conv2DPCALayer(64, self.thresh),
+            Conv2DPCALayer(64, self.thresh, centering=self.centering),
             nn.ReLU(True),
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.Conv2d(64, 3, (3, 3), stride=1, padding=1, dilation=1),
@@ -880,12 +892,13 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99):
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False):
         super(VGG, self).__init__()
         if regress:
             self.scale_factor = num_classes
             num_classes = 1
         self.regress = regress
+        self.centering = centering
         self.add_pca_layers = add_pca_layers
         if linear_layer is None:
             linear_layer = final_filter // 2
@@ -896,7 +909,7 @@ class VGG(nn.Module):
                 nn.BatchNorm1d(final_filter*(pool_size**2)),
                 nn.Dropout(0.25),
                 nn.Linear(final_filter*(pool_size**2), linear_layer),
-                LinearPCALayer(linear_layer, thresh),
+                LinearPCALayer(linear_layer, thresh, centering=self.centering),
                 nn.ReLU(True),
                 nn.BatchNorm1d(linear_layer),
                 nn.Dropout(0.25),
@@ -1210,6 +1223,15 @@ def vgg13PCA(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['B'], pca=True), add_pca_layers=True, **kwargs)
     model.name = "VGG13PCA"
+    return model
+
+def vgg13PCA_centered(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B'], pca=True, centering=True), add_pca_layers=True, centering=True, **kwargs)
+    model.name = "VGG13PCACentered"
     return model
 
 def vgg13PCA98(*args, **kwargs):

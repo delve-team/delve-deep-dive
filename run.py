@@ -5,7 +5,8 @@ import json
 import torch
 import sys
 import types
-from gradient_pca_layers import change_all_pca_layer_thresholds
+from pca_layers import change_all_pca_layer_thresholds
+from pca_layers import change_all_pca_layer_centering
 
 from trainer import Trainer
 
@@ -61,6 +62,10 @@ if __name__ == '__main__':
                         train_loader, test_loader, shape, num_classes = parse_dataset(dataset, batch_size)
                         model = parse_model(model, shape, num_classes)
                         change_all_pca_layer_thresholds(thresh, model, verbose=True)
+                        if 'centering' in config_dict:
+                            change_all_pca_layer_centering(centering=config_dict['centering'], network=model, verbose=True)
+                        else:
+                            change_all_pca_layer_centering(centering=False, network=model, verbose=True)
                         conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
                         trainer = Trainer(model,
                                           train_loader,

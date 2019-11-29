@@ -177,3 +177,5 @@ class Trainer:
         else:
             self.stats.add_scalar('test_accuracy', correct/total)
             print('{} Test Accuracy on {} images: {:.4f}'.format(now(), total, correct/total))
+        torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))
+
