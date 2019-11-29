@@ -1,0 +1,10 @@
+{
+  "models" : ["vggO8"],
+
+  "dataset": "Cifar10",
+  "epochs":   300,
+  "batch_sizes": [128],
+  "optimizer": "radam",
+  "conv_method": "channelwise",
+  "threshs": [0.999]
+}

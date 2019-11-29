@@ -30,7 +30,7 @@ def parse_model(model_name, shape, num_classes):
 def parse_dataset(dataset_name, batch_size):
     batch_size = int(batch_size)
     try:
-        train_loader, test_loader, shape, num_classes = datasets.__dict__[dataset_name](batch_size=batch_size)
+        train_loader, test_loader, shape, num_classes = datasets.__dict__[dataset_name](batch_size=batch_size, no_norm=True)
     except KeyError:
         raise NameError("%s doesn't exist." % dataset_name)
     return train_loader, test_loader, shape, num_classes

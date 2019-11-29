@@ -290,8 +290,8 @@ class Food101Dataset(Dataset):
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
 
-def Food101(batch_size=12, output_size=(112,112),
-                        cache_dir='tmp', selected_classes=list()):
+def Food101(batch_size=12, output_size=(256, 256),
+                        cache_dir='tmp', selected_classes=list(), no_norm: bool = False, shuffle_test: bool = False):
     # dataset = Food101Dataset(cache_dir)
     # dataset.init(selected_classes=selected_classes)
 
@@ -304,16 +304,17 @@ def Food101(batch_size=12, output_size=(112,112),
     TPIL = transforms.ToPILImage()
 
 
+
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RS, RC, RHF, TT, NRM])
+    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RS, RHF, TT])
     # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([RS, TT, NRM])
+    transform_no_aug = transforms.Compose([TT, NRM]) if not no_norm else transforms.Compose([RS, TT])
 
     train_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/train', transform=transform_with_aug)
     test_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/test', transform=transform_no_aug)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, pin_memory=True, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, pin_memory=True, shuffle=True, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, pin_memory=True, shuffle=shuffle_test, num_workers=4)
     train_loader.name = "Food101"
     num_classes = len(selected_classes) if selected_classes else 101
     return train_loader, test_loader, output_size, num_classes
@@ -368,7 +369,7 @@ def CatVsDog(batch_size=12, output_size=(32, 32), cache_dir='tmp'):
     return train_loader, test_loader, (32,32), 2
 
 
-def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp'):
+def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: bool = False, test_shuffle=False):
     # Transformations
     # Transformations
     RC = transforms.RandomCrop((64, 64), padding=8)
@@ -380,9 +381,9 @@ def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp'):
     RS = transforms.Resize(224)
 
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
+    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RC, RHF, TT])
     # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([TT, NRM])
+    transform_no_aug = transforms.Compose([TT, NRM]) if not no_norm else transforms.Compose([TT])
 
 
     trainset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/train/', transform=transform_with_aug)
@@ -392,7 +393,7 @@ def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp'):
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=3, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=3, pin_memory=False)
+                                             shuffle=test_shuffle, num_workers=3, pin_memory=False)
     train_loader.name = "TinyImageNet"
     return train_loader, test_loader, (64, 64), 200
 

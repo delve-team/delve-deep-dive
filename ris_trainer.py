@@ -72,13 +72,13 @@ class Trainer:
 
             if trained_epochs >= epochs:
                 self.experiment_done = True
-                print('Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
+                print(f'Experiment Logs for the exact same experiment {self.savepath} with identical run_id was detecting, training will be skipped, consider using another run_id')
         self.parallel = data_prallel
         if data_prallel:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_loss')
         self.pooling_strat = conv_method
-        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
+        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None, ignore_layer_names='classifier666')
 
     def train(self):
         if self.experiment_done:
@@ -102,7 +102,7 @@ class Trainer:
         running_loss = 0
         old_time = time()
         for batch, data in enumerate(self.train_loader):
-            if batch%500 == 0 and batch != 0:
+            if batch%5 == 0 and batch != 0:
                 print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, 'loss:', running_loss/total)
                 old_time = time()
             inputs, _ = data

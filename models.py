@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torchvision
 from math import floor
 from operator import mul
-from gradient_pca_layers import Conv2DPCALayer, LinearPCALayer
+from pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet
 
 
@@ -630,13 +630,13 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=
 
 class TinyCAE(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .99):
+    def __init__(self, use_pca: bool = True, thresh = .99, keepdim: bool = True):
         super(TinyCAE, self).__init__()
         self.use_pca = use_pca
         self.encoding_mode = False
         self.decoder = self.get_decoder()
         self.use_pca = use_pca
-        self.pca_layer = LinearPCALayer(keepdim=False, threshold=thresh)
+        self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
         self.encoder = self.get_encoder()
         self._initialize_weights()
 
@@ -675,6 +675,8 @@ class TinyCAE(nn.Module):
         if self.use_pca:
             x1 = x.view(x.size(0), -1)
             x1 = self.pca_layer(x1)
+            if self.pca_layer.keepdim:
+                x = x1.view(x.shape)
             if self.encoding_mode:
                 return x1
         x = self.decoder(x)
@@ -697,6 +699,179 @@ class TinyCAE(nn.Module):
 def tiny_cae(*args, **kwargs):
     model = TinyCAE(use_pca=True)
     model.name = 'TinyCAE'
+    return model
+
+class TinyCAEPCA(nn.Module):
+
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True):
+        super(TinyCAEPCA, self).__init__()
+        self.use_pca = use_pca
+        self.thresh = thresh
+        self.encoding_mode = False
+        self.decoder = self.get_decoder()
+        self.use_pca = use_pca
+        self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
+        self.encoder = self.get_encoder()
+        self._initialize_weights()
+
+    def get_encoder(self) -> nn.Module:
+        encoder = nn.Sequential(
+            nn.Conv2d(3, 16, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(16, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+            nn.Conv2d(16, 8, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(8, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+            nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(8, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+        )
+        return encoder
+
+    def get_decoder(self) -> nn.Module:
+        decoder = nn.Sequential(
+            nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(8, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(8, 8, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(8, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(8, 16, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(16, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(16, 3, (3, 3), stride=1, padding=1, dilation=1),
+            nn.Sigmoid()
+        )
+        return decoder
+
+    def forward(self, x):
+        x = self.encoder(x)
+        if self.use_pca:
+            x1 = x.view(x.size(0), -1)
+            if self.encoding_mode:
+                return x1
+        x = self.decoder(x)
+        return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
+
+def tiny_cae_pca(*args, **kwargs):
+    model = TinyCAEPCA()
+    model.name = 'TinyCAEPCA'
+    return model
+
+
+class BIGCAEPCA(nn.Module):
+
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True):
+        super(BIGCAEPCA, self).__init__()
+        self.use_pca = use_pca
+        self.thresh = thresh
+        self.encoding_mode = False
+        self.decoder = self.get_decoder()
+        self.use_pca = use_pca
+        self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
+        self.encoder = self.get_encoder()
+        self._initialize_weights()
+
+    def get_encoder(self) -> nn.Module:
+        encoder = nn.Sequential(
+            nn.Conv2d(3, 64, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(64, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(64, 64, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(64, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+            nn.Conv2d(64, 128, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(128, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(128, 128, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(128, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+            nn.Conv2d(128, 256, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(256, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(256, self.thresh),
+            nn.ReLU(True),
+            nn.MaxPool2d((2, 2), stride=2),
+        )
+        return encoder
+
+    def get_decoder(self) -> nn.Module:
+        decoder = nn.Sequential(
+            nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(256, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(256, 256, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(256, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(256, 128, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(128, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(128, 128, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(128, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(128, 64, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(64, self.thresh),
+            nn.ReLU(True),
+            nn.Conv2d(64, 64, (3, 3), stride=1, padding=1, dilation=1),
+            Conv2DPCALayer(64, self.thresh),
+            nn.ReLU(True),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(64, 3, (3, 3), stride=1, padding=1, dilation=1),
+            nn.Sigmoid()
+        )
+        return decoder
+
+    def forward(self, x):
+        x = self.encoder(x)
+        if self.use_pca:
+            x1 = x.view(x.size(0), -1)
+            if self.encoding_mode:
+                return x1
+        x = self.decoder(x)
+        return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+
+
+def big_cae_pca(*args, **kwargs):
+    model = BIGCAEPCA()
+    model.name = 'Big_CAE_PCA'
     return model
 
 

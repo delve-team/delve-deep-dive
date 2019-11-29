@@ -91,7 +91,7 @@ class Trainer:
 
             if trained_epochs >= epochs:
                 self.experiment_done = True
-                print('Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
+                print(f'Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
         self.parallel = data_prallel
         if data_prallel:
             self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
@@ -172,8 +172,8 @@ class Trainer:
         self.stats.add_scalar('test_loss', test_loss/total)
         if self.compute_top_k:
             self.stats.add_scalar('test_accuracy', top5_accumulator/(batch+1))
-            print('{} Test Top5-Accuracy on {} images: {:.2f}'.format(now(), total, top5_accumulator/(batch+1)))
+            print('{} Test Top5-Accuracy on {} images: {:.4f}'.format(now(), total, top5_accumulator/(batch+1)))
 
         else:
             self.stats.add_scalar('test_accuracy', correct/total)
-            print('{} Test Accuracy on {} images: {:.2f}'.format(now(), total, correct/total))
+            print('{} Test Accuracy on {} images: {:.4f}'.format(now(), total, correct/total))

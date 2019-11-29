@@ -51,7 +51,7 @@ class Conv2DPCALayerFunction(Function):
 
 class LinearPCALayer(Module):
 
-    def __init__(self, in_features: int, threshold: float = .99, keepdim: bool = True, verbose: bool = False, gradient_epoch_start: int = 20, centering: bool = False, boosted: bool = True):
+    def __init__(self, in_features: int, threshold: float = .99, keepdim: bool = True, verbose: bool = False, gradient_epoch_start: int = 1, centering: bool = False, boosted: bool = False):
         super(LinearPCALayer, self).__init__()
         self.register_buffer('eigenvalues', torch.zeros(in_features))
         self.register_buffer('eigenvectors', torch.zeros((in_features, in_features)))
@@ -126,18 +126,23 @@ class LinearPCALayer(Module):
     def forward(self, x):
         trans_mat = None
         if self.gradient_epoch < self.epoch:
-            trans_mat = self.transformation_matrix
+            if self.boosted:
+                trans_mat = self.reversed_transformaton_matrix
+            else:
+                trans_mat = self.transformation_matrix
         if self.training:
             self.pca_computed = False
             self._update_autorcorrelation(x)
         else:
             if not self.pca_computed:
+                self.epoch += 1
+                if 50 < self.epoch:
+                    self.boosted = not self.boosted
                 self._compute_autorcorrelation()
                 self._compute_eigenspace()
                 self._compute_pca_matrix()
                 self.pca_computed = True
                 self._reset_autorcorrelation()
-                self.epoch += 1
             if self.boosted:
                 trans_mat = self.reversed_transformaton_matrix
             if self.keepdim:
@@ -147,9 +152,9 @@ class LinearPCALayer(Module):
 
 class Conv2DPCALayer(LinearPCALayer):
 
-    def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 20, boosted: bool = True
+    def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 1, boosted: bool = False
                  ):
-        super(Conv2DPCALayer, self).__init__(in_features=in_filters, threshold=threshold, keepdim=True, verbose=verbose, gradient_epoch_start=gradient_epoch_start)
+        super(Conv2DPCALayer, self).__init__(in_features=in_filters, threshold=threshold, keepdim=True, verbose=verbose, gradient_epoch_start=gradient_epoch_start, boosted=boosted)
         if verbose:
             print('Added Conv2D PCA Layer')
         self.pca_conv = torch.nn.Conv2d(in_channels=in_filters,
@@ -178,6 +183,8 @@ class Conv2DPCALayer(LinearPCALayer):
         else:
             if not self.pca_computed:
                 self.epoch += 1
+                if 50 < self.epoch:
+                    self.boosted = not self.boosted
                 self._compute_autorcorrelation()
                 self._compute_eigenspace()
                 self._compute_pca_matrix()

@@ -3,11 +3,18 @@ from torch.nn import Module
 
 
 def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: bool = False):
+    in_dims = []
+    fs_dims = []
+    sat = []
     for module in network.modules():
         if isinstance(module, Conv2DPCALayer) or isinstance(module, LinearPCALayer):
             module.threshold = threshold
+            in_dims.append(module.in_dim)
+            fs_dims.append(module.fs_dim)
+            sat.append(module.sat)
             if verbose:
                 print(f'Changed threshold for layer {module} to {threshold}')
+    return sat, in_dims, fs_dims
 
 
 class LinearPCALayer(Module):
@@ -77,10 +84,14 @@ class LinearPCALayer(Module):
             print(f'Highest cumvar99 is {percentages[percentages < self.threshold][-1]}, extending eigenspace by one dimension for eigenspace of {eigen_space.shape}')
             eigen_space = self.eigenvectors[:, :eigen_space.shape[1]+1]
 
+        sat = round((eigen_space.shape[1] / self.eigenvalues.shape[0])*100, 4)
+        fs_dim = eigen_space.shape[0]
+        in_dim = eigen_space.shape[1]
         if self.verbose:
             print(f'Saturation: {round(eigen_space.shape[1] / self.eigenvalues.shape[0], 4)}%', 'Eigenspace has shape', eigen_space.shape)
         self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t())
         self.reduced_transformation_matrix: torch.Tensor = eigen_space
+        self.sat, self.in_dim, self.fs_dim = sat, in_dim, fs_dim
 
     def forward(self, x):
         if self.training:
