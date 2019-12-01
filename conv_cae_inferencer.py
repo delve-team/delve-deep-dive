@@ -10,17 +10,18 @@ import numpy as np
 from matplotlib.pyplot import title, savefig
 
 if __name__ == '__main__':
-    state_path = './logs/Big_CAE_PCA/Food101/Big_CAE_PCA_bs32_e20_idCAE.pt'
+    state_path = './logs/TinyCAEPCA/Food101/TinyCAEPCA_bs32_e20_idcentered.pt'
     device = 'cpu'
     #torch.cuda.set_device(device)
 
 
 
-    cae = BIGCAEPCA().to(device)
+    cae = TinyCAEPCA().to(device)
     thresh = 10.0
     _, test, _, _ = Food101(1, no_norm=True, shuffle_test=True)
-    path = './BIGCAEPCAFood101Samples'
+    path = './CenteredDenseFood101Samples'
     if not exists(path):
+        print('created dir')
         mkdir(path=path)
 
     cae.load_state_dict(torch.load(state_path)['model_state_dict'])

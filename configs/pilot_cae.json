@@ -1,6 +1,6 @@
 {
   "models" : [
-    "big_cae_pca"
+    "tiny_cae_pca"
   ],
 
   "dataset": "Food101",

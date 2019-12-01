@@ -139,7 +139,7 @@ class LinearPCALayer(Module):
 class Conv2DPCALayer(LinearPCALayer):
 
     def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 20, centering: bool = False):
-        super(Conv2DPCALayer, self).__init__(in_features=in_filters, threshold=threshold, keepdim=True, verbose=verbose, gradient_epoch_start=gradient_epoch_start)
+        super(Conv2DPCALayer, self).__init__(centering=centering, in_features=in_filters, threshold=threshold, keepdim=True, verbose=verbose, gradient_epoch_start=gradient_epoch_start)
         if verbose:
             print('Added Conv2D PCA Layer')
         self.convolution = torch.nn.Conv2d(in_channels=in_filters,

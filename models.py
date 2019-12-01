@@ -714,7 +714,9 @@ def tiny_cae(*args, **kwargs):
 
 class TinyCAEPCA(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=False):
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=True):
+        self.centering = centering
+
         super(TinyCAEPCA, self).__init__()
         self.use_pca = use_pca
         self.thresh = thresh
@@ -724,7 +726,6 @@ class TinyCAEPCA(nn.Module):
         self.pca_layer = LinearPCALayer(in_features=(256**2)//8, keepdim=keepdim, threshold=thresh)
         self.encoder = self.get_encoder()
         self._initialize_weights()
-        self.centering = centering
 
     def get_encoder(self) -> nn.Module:
         encoder = nn.Sequential(
