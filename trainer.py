@@ -150,7 +150,7 @@ class Trainer:
             self.stats.add_scalar('training_accuracy', correct/total)
         return running_loss/total, correct/total
 
-    def test(self):
+    def test(self, save=True):
         self.model.eval()
         correct = 0
         total = 0
@@ -177,5 +177,7 @@ class Trainer:
         else:
             self.stats.add_scalar('test_accuracy', correct/total)
             print('{} Test Accuracy on {} images: {:.4f}'.format(now(), total, correct/total))
-        torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))
+        if save:
+            torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))
+        return correct / total, test_loss / total
 
