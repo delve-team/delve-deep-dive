@@ -1,5 +1,58 @@
 import torch
 from torch.nn import Module
+from numpy.linalg import matrix_rank
+from numpy.random import uniform
+import numpy as np
+
+
+def rvs(dim=3):
+     random_state = np.random
+     H = np.eye(dim)
+     D = np.ones((dim,))
+     for n in range(1, dim):
+         x = random_state.normal(size=(dim-n+1,))
+         D[n-1] = np.sign(x[0])
+         x[0] -= D[n-1]*np.sqrt((x*x).sum())
+         # Householder transformation
+         Hx = (np.eye(dim-n+1) - 2.*np.outer(x, x)/(x*x).sum())
+         mat = np.eye(dim)
+         mat[n-1:, n-1:] = Hx
+         H = np.dot(H, mat)
+         # Fix the last sign such that the determinant is 1
+     D[-1] = (-1)**(1-(dim % 2))*D.prod()
+     # Equivalent to np.dot(np.diag(D), H) but faster, apparently
+     H = (D*H.T).T
+     return H
+
+
+def change_all_pca_layer_thresholds_and_inject_random_directions(threshold: float, network: Module, verbose: bool = False, device='cpu'):
+    in_dims = []
+    fs_dims = []
+    sat = []
+    for module in network.modules():
+        if isinstance(module, LinearPCALayer):
+            module.threshold = threshold
+            fake_base = rvs(module.fs_dim)[:, :module.in_dim]
+            in_dims.append(module.in_dim)
+            fs_dims.append(module.fs_dim)
+            sat.append(module.sat)
+            fake_projection = fake_base @ fake_base.T
+            module.transformation_matrix.data = torch.from_numpy(fake_projection.astype('float32')).to(device)
+            if verbose:
+                print(f'Changed threshold for layer {module} to {threshold}')
+        elif isinstance(module, Conv2DPCALayer):
+            module.threshold = threshold
+            in_dims.append(module.in_dim)
+            fs_dims.append(module.fs_dim)
+            sat.append(module.sat)
+            fake_base = rvs(module.fs_dim)[:, :module.in_dim]
+            fake_projection = fake_base @ fake_base.T
+            module.transformation_matrix.data = torch.from_numpy(fake_projection.astype('float32')).to(device)
+            weight = torch.nn.Parameter(module.transformation_matrix.unsqueeze(2).unsqueeze(3))
+            module.convolution.weight = weight
+            if verbose:
+                print(f'Changed threshold for layer {module} to {threshold}')
+    return sat, in_dims, fs_dims
 
 
 def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: bool = False):
@@ -16,6 +69,7 @@ def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: 
                 print(f'Changed threshold for layer {module} to {threshold}')
     return sat, in_dims, fs_dims
 
+
 def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bool = False):
     in_dims = []
     fs_dims = []
@@ -29,7 +83,6 @@ def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bo
             if verbose:
                 print(f'Changed threshold for layer {module} to {centering}')
     return sat, in_dims, fs_dims
-
 
 
 class LinearPCALayer(Module):
@@ -136,6 +189,7 @@ class LinearPCALayer(Module):
             else:
                 return x @ self.reduced_transformation_matrix
 
+
 class Conv2DPCALayer(LinearPCALayer):
 
     def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 20, centering: bool = False):
@@ -145,6 +199,7 @@ class Conv2DPCALayer(LinearPCALayer):
         self.convolution = torch.nn.Conv2d(in_channels=in_filters,
                                            out_channels=in_filters,
                                            kernel_size=1, stride=1, bias=False)
+
     def _compute_pca_matrix(self):
         if self.verbose:
             print('computing autorcorrelation for Conv2D')
@@ -167,6 +222,5 @@ class Conv2DPCALayer(LinearPCALayer):
                 self._compute_eigenspace()
                 self._compute_pca_matrix()
                 self._reset_autorcorrelation()
-                #ctx.save_for_backward(self.backwards_convolution)
                 self.pca_computed = True
             return self.convolution(x)
