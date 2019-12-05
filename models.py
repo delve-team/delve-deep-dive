@@ -640,7 +640,7 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=
 
 class TinyCAE(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .99, keepdim: bool = True, centering=False):
+    def __init__(self, use_pca: bool = True, thresh = .99, keepdim: bool = True, centering=True):
         super(TinyCAE, self).__init__()
         self.use_pca = use_pca
         self.centering = centering
