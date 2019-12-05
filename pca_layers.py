@@ -87,7 +87,12 @@ def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bo
 
 class LinearPCALayer(Module):
 
-    def __init__(self, in_features: int, threshold: float = .99, keepdim: bool = True, verbose: bool = False, gradient_epoch_start: int = 20, centering: bool = False):
+    def __init__(self, in_features: int,
+                 threshold: float = .99,
+                 keepdim: bool = True,
+                 verbose: bool = False,
+                 gradient_epoch_start: int = 20,
+                 centering: bool = False):
         super(LinearPCALayer, self).__init__()
         self.register_buffer('eigenvalues', torch.zeros(in_features))
         self.register_buffer('eigenvectors', torch.zeros((in_features, in_features)))
@@ -185,9 +190,15 @@ class LinearPCALayer(Module):
                 self._reset_autorcorrelation()
                 self.epoch += 1
             if self.keepdim:
-                return x @ self.transformation_matrix.t()
+                if not self.centering:
+                    return x @ self.transformation_matrix.t()
+                else:
+                    return ((x-self.mean) @ self.transformation_matrix.t()) + self.mean
             else:
-                return x @ self.reduced_transformation_matrix
+                if not self.centering:
+                    return x @ self.reduced_transformation_matrix
+                else:
+                    return ((x-self.mean) @ self.reduced_transformation_matrix) + self.mean
 
 
 class Conv2DPCALayer(LinearPCALayer):
@@ -198,15 +209,43 @@ class Conv2DPCALayer(LinearPCALayer):
             print('Added Conv2D PCA Layer')
         self.convolution = torch.nn.Conv2d(in_channels=in_filters,
                                            out_channels=in_filters,
-                                           kernel_size=1, stride=1, bias=False)
+                                           kernel_size=1, stride=1, bias=True)
+        self.mean_subtracting_convolution = torch.nn.Conv2d(in_channels=in_filters,
+                                                              out_channels=in_filters,
+                                                              kernel_size=1, stride=1, bias=True)
+        self.mean_subtracting_convolution.weight = torch.nn.Parameter(
+            torch.zeros((in_filters, in_filters)).unsqueeze(2).unsqueeze(3)
+        )
+
 
     def _compute_pca_matrix(self):
         if self.verbose:
             print('computing autorcorrelation for Conv2D')
         super()._compute_pca_matrix()
         # unsequeeze the matrix into 1x1xDxD in order to make it behave like a 1x1 convolution
-        weight = torch.nn.Parameter(self.transformation_matrix.unsqueeze(2).unsqueeze(3))
+        weight = torch.nn.Parameter(
+            self.transformation_matrix.unsqueeze(2).unsqueeze(3)
+        )
         self.convolution.weight = weight
+
+        self.mean_subtracting_convolution.weight = torch.nn.Parameter(
+            torch.zeros_like(self.transformation_matrix).unsqueeze(2).unsqueeze(3)
+        )
+
+        if self.centering:
+            self.convolution.bias = torch.nn.Parameter(
+                self.mean
+            )
+            self.mean_subtracting_convolution.bias = torch.nn.Parameter(
+                -self.mean
+            )
+        else:
+            self.convolution.bias = torch.nn.Parameter(
+                torch.zeros_like(self.mean)
+            )
+            self.mean_subtracting_convolution.bias = torch.nn.Parameter(
+                torch.zeros_like(self.mean)
+            )
 
     def forward(self, x):
         if self.training:
@@ -223,4 +262,7 @@ class Conv2DPCALayer(LinearPCALayer):
                 self._compute_pca_matrix()
                 self._reset_autorcorrelation()
                 self.pca_computed = True
+            #if self.centering:
+            x1 = self.mean_subtracting_convolution(x)
+            x = x + x1
             return self.convolution(x)

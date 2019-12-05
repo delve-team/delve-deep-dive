@@ -10,7 +10,7 @@
   "batch_sizes": [128],
   "optimizer": "adam",
   "conv_method": "channelwise",
-  "threshs": [0.99],
-  "centering": false
+  "threshs": [0.999],
+  "centering": true
 
 }
