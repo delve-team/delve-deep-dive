@@ -10,16 +10,16 @@ import numpy as np
 from matplotlib.pyplot import title, savefig
 
 if __name__ == '__main__':
-    state_path = './logs/TinyCAE/Food101/TinyCAE_bs128_e20_idcentered.pt'
+    state_path = './logs/TinyCAEPCA/Food101/TinyCAEPCA_bs128_e20_idcentered2.pt'
     device = 'cpu'
     #torch.cuda.set_device(device)
 
 
 
-    cae = TinyCAE().to(device)
+    cae = TinyCAEPCA().to(device)
     thresh = 10.0
     _, test, _, _ = Food101(1, no_norm=True, shuffle_test=True)
-    path = './CenteredDenseFood101Samples'
+    path = './CenteredConvFood101Samples2'
     if not exists(path):
         print('created dir')
         mkdir(path=path)
@@ -27,6 +27,7 @@ if __name__ == '__main__':
     cae.load_state_dict(torch.load(state_path)['model_state_dict'])
 
     cae.eval()
+    print(cae.pca_layer.centering)
     change_all_pca_layer_thresholds(thresh, cae, verbose=True)
     cae.to(device)
     for i,(data, _) in enumerate(test):

@@ -4,6 +4,8 @@ from numpy.linalg import matrix_rank
 from numpy.random import uniform
 import numpy as np
 
+global num
+
 
 def rvs(dim=3):
      random_state = np.random
@@ -87,6 +89,8 @@ def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bo
 
 class LinearPCALayer(Module):
 
+    num = 0
+
     def __init__(self, in_features: int,
                  threshold: float = .99,
                  keepdim: bool = True,
@@ -94,18 +98,20 @@ class LinearPCALayer(Module):
                  gradient_epoch_start: int = 20,
                  centering: bool = False):
         super(LinearPCALayer, self).__init__()
-        self.register_buffer('eigenvalues', torch.zeros(in_features))
-        self.register_buffer('eigenvectors', torch.zeros((in_features, in_features)))
-        self.register_buffer('_threshold', torch.Tensor([threshold]))
-        self.register_buffer('autorcorrelation_matrix', torch.zeros((in_features, in_features)))
-        self.register_buffer('seen_samples', torch.zeros(1))
-        self.register_buffer('running_sum', torch.zeros(in_features))
-        self.register_buffer('mean', torch.zeros(in_features))
+        self.register_buffer('eigenvalues', torch.zeros(in_features, dtype=torch.float64))
+        self.register_buffer('eigenvectors', torch.zeros((in_features, in_features), dtype=torch.float64))
+        self.register_buffer('_threshold', torch.Tensor([threshold]).type(torch.float64))
+        self.register_buffer('autorcorrelation_matrix', torch.zeros((in_features, in_features), dtype=torch.float64))
+        self.register_buffer('seen_samples', torch.zeros(1, dtype=torch.float64))
+        self.register_buffer('running_sum', torch.zeros(in_features, dtype=torch.float64))
+        self.register_buffer('mean', torch.zeros(in_features, dtype=torch.float64))
         self.keepdim: bool = keepdim
         self.verbose: bool = verbose
         self.pca_computed: bool = True
         self.gradient_epoch = gradient_epoch_start
         self.epoch = 0
+        self.name = f'pca{LinearPCALayer.num}'
+        LinearPCALayer.num += 1
         self._centering = centering
 
     @property
@@ -114,7 +120,7 @@ class LinearPCALayer(Module):
 
     @threshold.setter
     def threshold(self, threshold: float) -> None:
-        self._threshold.data = torch.Tensor([threshold]).to(self.threshold.device)
+        self._threshold.data = torch.Tensor([threshold]).type(torch.float64).to(self.threshold.device)
         self._compute_pca_matrix()
 
     @property
@@ -127,6 +133,7 @@ class LinearPCALayer(Module):
         self._compute_pca_matrix()
 
     def _update_autorcorrelation(self, x: torch.Tensor) -> None:
+        x = x.type(torch.float64)
         self.autorcorrelation_matrix.data += torch.matmul(x.transpose(0, 1), x)
         self.running_sum += x.sum(dim=0)
         self.seen_samples.data += x.shape[0]
@@ -134,12 +141,19 @@ class LinearPCALayer(Module):
     def _compute_autorcorrelation(self) -> torch.Tensor:
         tlen = self.seen_samples
         cov_mtx = self.autorcorrelation_matrix
-        cov_mtx /= tlen - 1
+        cov_mtx
         avg = self.running_sum / tlen
+        #avg *= 10
+        #cov_mtx *= 10
         if self.centering:
             avg_mtx = torch.ger(avg, avg)
             cov_mtx = cov_mtx - avg_mtx
-        self.mean.data = avg
+
+            cov_mtx  = cov_mtx/tlen
+        self.mean.data = avg.type(torch.float32)
+        
+        np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
+        np.save(self.name+'_mean.npy', self.mean.cpu().numpy())
         return cov_mtx
 
     def _compute_eigenspace(self):
@@ -150,9 +164,9 @@ class LinearPCALayer(Module):
         self.eigenvectors.data = self.eigenvectors[:, idx]
 
     def _reset_autorcorrelation(self):
-        self.autorcorrelation_matrix.data = torch.zeros(self.autorcorrelation_matrix.shape).to(self.autorcorrelation_matrix.device)
-        self.seen_samples.data = torch.zeros(self.seen_samples.shape).to(self.autorcorrelation_matrix.device)
-        self.running_sum.data = torch.zeros(self.running_sum.shape).to(self.autorcorrelation_matrix.device)
+        self.autorcorrelation_matrix.data = torch.zeros(self.autorcorrelation_matrix.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
+        self.seen_samples.data = torch.zeros(self.seen_samples.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
+        self.running_sum.data = torch.zeros(self.running_sum.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
 
     def _compute_pca_matrix(self):
         if self.verbose:
@@ -172,8 +186,8 @@ class LinearPCALayer(Module):
         in_dim = eigen_space.shape[1]
         if self.verbose:
             print(f'Saturation: {round(eigen_space.shape[1] / self.eigenvalues.shape[0], 4)}%', 'Eigenspace has shape', eigen_space.shape)
-        self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t())
-        self.reduced_transformation_matrix: torch.Tensor = eigen_space
+        self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t()).type(torch.float32)
+        self.reduced_transformation_matrix: torch.Tensor = eigen_space.type(torch.float32)
         self.sat, self.in_dim, self.fs_dim = sat, in_dim, fs_dim
 
     def forward(self, x):
