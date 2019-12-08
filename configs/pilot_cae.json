@@ -1,11 +1,11 @@
 {
   "models" : [
-    "tiny_cae_pca"
+    "big_cae_pca"
   ],
 
   "dataset": "Food101",
   "epochs":   20,
-  "batch_sizes": [128],
+  "batch_sizes": [32],
   "optimizer": "adam"
 
 }

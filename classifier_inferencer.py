@@ -89,8 +89,9 @@ if __name__ == '__main__':
                                           thresh=thresh)
                         model.load_state_dict(torch.load(trainer.savepath.replace('.csv', '.pt'))['model_state_dict'])
                         print('Model loaded')
-                        for eval_thresh in [0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 3.0]:
-                            change_all_pca_layer_thresholds_and_inject_random_directions(eval_thresh, model, verbose=False)
+                        for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 3.0]):
+                            #change_all_pca_layer_thresholds_and_inject_random_directions(eval_thresh, model, verbose=False)
+                            change_all_pca_layer_thresholds(eval_thresh, network=model)
                             print('Changed model threshold to', eval_thresh)
                             model = model.to(trainer.device)
                             trainer.model = model
@@ -107,4 +108,4 @@ if __name__ == '__main__':
                             'model': model_names,
                             'accs': accs,
                             'thresh': inference_thresholds
-                        }).to_csv('results_final_random.csv', sep=';')
+                        }).to_csv('results_final_centering.csv', sep=';')

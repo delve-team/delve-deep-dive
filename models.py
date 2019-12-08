@@ -794,8 +794,9 @@ def tiny_cae_pca(*args, **kwargs):
 
 class BIGCAEPCA(nn.Module):
 
-    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=False):
+    def __init__(self, use_pca: bool = True, thresh = .999, keepdim: bool = True, centering=True):
         super(BIGCAEPCA, self).__init__()
+        self.centering = centering
         self.use_pca = use_pca
         self.thresh = thresh
         self.encoding_mode = False

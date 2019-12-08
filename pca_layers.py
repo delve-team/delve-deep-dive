@@ -101,10 +101,10 @@ class LinearPCALayer(Module):
         self.register_buffer('eigenvalues', torch.zeros(in_features, dtype=torch.float64))
         self.register_buffer('eigenvectors', torch.zeros((in_features, in_features), dtype=torch.float64))
         self.register_buffer('_threshold', torch.Tensor([threshold]).type(torch.float64))
-        self.register_buffer('autorcorrelation_matrix', torch.zeros((in_features, in_features), dtype=torch.float64))
+        self.register_buffer('sum_squares', torch.zeros((in_features, in_features), dtype=torch.float64))
         self.register_buffer('seen_samples', torch.zeros(1, dtype=torch.float64))
         self.register_buffer('running_sum', torch.zeros(in_features, dtype=torch.float64))
-        self.register_buffer('mean', torch.zeros(in_features, dtype=torch.float64))
+        self.register_buffer('mean', torch.zeros(in_features, dtype=torch.float32))
         self.keepdim: bool = keepdim
         self.verbose: bool = verbose
         self.pca_computed: bool = True
@@ -134,26 +134,23 @@ class LinearPCALayer(Module):
 
     def _update_autorcorrelation(self, x: torch.Tensor) -> None:
         x = x.type(torch.float64)
-        self.autorcorrelation_matrix.data += torch.matmul(x.transpose(0, 1), x)
+        self.sum_squares.data += torch.matmul(x.transpose(0, 1), x)
         self.running_sum += x.sum(dim=0)
         self.seen_samples.data += x.shape[0]
 
     def _compute_autorcorrelation(self) -> torch.Tensor:
         tlen = self.seen_samples
-        cov_mtx = self.autorcorrelation_matrix
-        cov_mtx
+        cov_mtx = self.sum_squares
         avg = self.running_sum / tlen
-        #avg *= 10
-        #cov_mtx *= 10
         if self.centering:
             avg_mtx = torch.ger(avg, avg)
             cov_mtx = cov_mtx - avg_mtx
 
-            cov_mtx  = cov_mtx/tlen
+            cov_mtx = cov_mtx/tlen
         self.mean.data = avg.type(torch.float32)
         
-        np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
-        np.save(self.name+'_mean.npy', self.mean.cpu().numpy())
+        #np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
+        #np.save(self.name+'_mean.npy', self.mean.cpu().numpy())
         return cov_mtx
 
     def _compute_eigenspace(self):
@@ -164,9 +161,9 @@ class LinearPCALayer(Module):
         self.eigenvectors.data = self.eigenvectors[:, idx]
 
     def _reset_autorcorrelation(self):
-        self.autorcorrelation_matrix.data = torch.zeros(self.autorcorrelation_matrix.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
-        self.seen_samples.data = torch.zeros(self.seen_samples.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
-        self.running_sum.data = torch.zeros(self.running_sum.shape, dtype=torch.float64).to(self.autorcorrelation_matrix.device)
+        self.sum_squares.data = torch.zeros(self.sum_squares.shape, dtype=torch.float64).to(self.sum_squares.device)
+        self.seen_samples.data = torch.zeros(self.seen_samples.shape, dtype=torch.float64).to(self.sum_squares.device)
+        self.running_sum.data = torch.zeros(self.running_sum.shape, dtype=torch.float64).to(self.sum_squares.device)
 
     def _compute_pca_matrix(self):
         if self.verbose:
@@ -248,10 +245,10 @@ class Conv2DPCALayer(LinearPCALayer):
 
         if self.centering:
             self.convolution.bias = torch.nn.Parameter(
-                self.mean
+                self.mean.type(torch.float32)
             )
             self.mean_subtracting_convolution.bias = torch.nn.Parameter(
-                -self.mean
+                -self.mean.type(torch.float32)
             )
         else:
             self.convolution.bias = torch.nn.Parameter(
