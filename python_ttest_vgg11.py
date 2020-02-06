@@ -33,8 +33,11 @@ for t in df.thresh.unique():
         m = np.mean(d, axis)
         v = np.var(d, axis, ddof=1)
         sdev = np.sqrt(v)
-        significant = "Yes" if result.pvalue < p_threshold else "No"
-        print(f"{t:1.4g} & {m:.4f}  & {sdev:.4f} & {result.statistic: .4g} & {1-result.pvalue:.3f} & {significant} \\\\")
+        if result.pvalue < p_threshold:
+            start, end = "\\textbf{", "}"
+        else:
+            start, end = "", ""
+        print(f"{start}{t:1.4g}{end} & {m:.4f}  & {sdev:.4f} & {result.statistic: .3g} & {result.pvalue:.3f} & \\\\")
     except Exception as e:
         print(t, e)
 
