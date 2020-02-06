@@ -27,10 +27,12 @@ def rvs(dim=3):
      return H
 
 
-def change_all_pca_layer_thresholds_and_inject_random_directions(threshold: float, network: Module, verbose: bool = False, device='cpu'):
+def change_all_pca_layer_thresholds_and_inject_random_directions(threshold: float, network: Module, verbose: bool = False, device='cpu', include_names: bool = False):
     in_dims = []
     fs_dims = []
     sat = []
+    names = []
+    lc = {'lin': 0, 'conv': 0}
     for module in network.modules():
         if isinstance(module, LinearPCALayer):
             module.threshold = threshold
@@ -40,6 +42,8 @@ def change_all_pca_layer_thresholds_and_inject_random_directions(threshold: floa
             sat.append(module.sat)
             fake_projection = fake_base @ fake_base.T
             module.transformation_matrix.data = torch.from_numpy(fake_projection.astype('float32')).to(device)
+            names.append(f'Linear-{lc["lin"]}')
+            lc["lin"] += 1
             if verbose:
                 print(f'Changed threshold for layer {module} to {threshold}')
         elif isinstance(module, Conv2DPCALayer):
@@ -52,8 +56,12 @@ def change_all_pca_layer_thresholds_and_inject_random_directions(threshold: floa
             module.transformation_matrix.data = torch.from_numpy(fake_projection.astype('float32')).to(device)
             weight = torch.nn.Parameter(module.transformation_matrix.unsqueeze(2).unsqueeze(3))
             module.convolution.weight = weight
+            names.append(f'Conv-{lc["conv"]}')
+            lc['conv'] += 1
             if verbose:
                 print(f'Changed threshold for layer {module} to {threshold}')
+    if include_names:
+        return sat, in_dims, fs_dims, names
     return sat, in_dims, fs_dims
 
 
@@ -61,15 +69,23 @@ def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: 
     in_dims = []
     fs_dims = []
     sat = []
+    names = []
+    lc = {'lin': 0, 'conv': 0}
     for module in network.modules():
         if isinstance(module, Conv2DPCALayer) or isinstance(module, LinearPCALayer):
             module.threshold = threshold
             in_dims.append(module.in_dim)
             fs_dims.append(module.fs_dim)
             sat.append(module.sat)
+            if isinstance(module, Conv2DPCALayer):
+                names.append(f'Conv-{lc["conv"]}')
+                lc['conv'] += 1
+            else:
+                names.append(f"Lin-{lc['lin']}")
+                lc["lin"] += 1
             if verbose:
                 print(f'Changed threshold for layer {module} to {threshold}')
-    return sat, in_dims, fs_dims
+    return sat, in_dims, fs_dims, names
 
 
 def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bool = False):
@@ -204,6 +220,8 @@ class LinearPCALayer(Module):
                 if not self.centering:
                     return x @ self.transformation_matrix.t()
                 else:
+                    self.mean = self.mean.to(x.device)
+                    self.transformation_matrix = self.transformation_matrix.to(x.device)
                     return ((x-self.mean) @ self.transformation_matrix.t()) + self.mean
             else:
                 if not self.centering:

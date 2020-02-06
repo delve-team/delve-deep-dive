@@ -1,0 +1,10 @@
+{
+  "models" : ["uber_net"],
+  "dataset": "MNIST",
+  "epochs":   25,
+  "batch_sizes": [32],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [0.99],
+  "centering": true
+}
