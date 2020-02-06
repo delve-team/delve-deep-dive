@@ -1,12 +1,10 @@
 {
-  "models" : ["vgg16"
-  ],
-
+  "models" : ["vgg13", "vgg19"],
   "dataset": ["Cifar10"],
-  "epochs":   50,
+  "epochs":   30,
   "batch_sizes": [128],
   "optimizer": "adam",
   "conv_method": "channelwise",
-  "threshs": [10.0],
+  "threshs": [21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0],
   "centering": true
 }

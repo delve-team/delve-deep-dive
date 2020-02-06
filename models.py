@@ -261,6 +261,32 @@ def resnet152(pretrained=False, **kwargs):
     return model
 
 
+class UberPaperCNN(nn.Module):
+    name = 'UberNet'
+
+    def __init__(self, input_size=(28, 28), num_classes=10, **kwargs):
+        super(UberPaperCNN, self).__init__()
+        self.num_classes = num_classes
+        self.input_size = input_size
+        self.architecture = nn.Sequential(*[
+            nn.Linear(784, 200),
+            LinearPCALayer(200, centering=True),
+            nn.ReLU(True),
+            nn.Linear(200, 200),
+            LinearPCALayer(200, centering=True),
+            nn.ReLU(True),
+            nn.Linear(200, 10)
+        ])
+
+    def forward(self, x):
+        x = x.view(-1, 28**2)
+        x = self.architecture(x)
+        return x
+
+def uber_net(**kwargs):
+    return UberPaperCNN(**kwargs)
+
+
 class LeNet(nn.Module):
     name = "LeNet"
 
@@ -318,6 +344,7 @@ cfg = {
     'BXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
     'BXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'Blin': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
     'DS': [32, 32, 'M', 64, 64, 'M', 128, 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M'],
     'DXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 16, 'M', 32, 32, 32, 'M', 32, 32, 32, 'M'],
     'DXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 'M', 64, 64, 64, 'M', 64, 64, 64, 'M'],
@@ -894,8 +921,10 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False):
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False,
+                 dense_classifier: bool = False):
         super(VGG, self).__init__()
+        self.dense_classifier = dense_classifier
         if regress:
             self.scale_factor = num_classes
             num_classes = 1
@@ -907,16 +936,28 @@ class VGG(nn.Module):
         self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d(pool_size)
         if add_pca_layers:
-            self.classifier = nn.Sequential(
-                nn.BatchNorm1d(final_filter*(pool_size**2)),
-                nn.Dropout(0.25),
-                nn.Linear(final_filter*(pool_size**2), linear_layer),
-                LinearPCALayer(linear_layer, thresh, centering=self.centering),
-                nn.ReLU(True),
-                nn.BatchNorm1d(linear_layer),
-                nn.Dropout(0.25),
-                nn.Linear(linear_layer, num_classes)
-            )
+            if not dense_classifier:
+                self.classifier = nn.Sequential(
+                    nn.BatchNorm1d(final_filter*(pool_size**2)),
+                    nn.Dropout(0.25),
+                    nn.Linear(final_filter*(pool_size**2), linear_layer),
+                    LinearPCALayer(linear_layer, thresh, centering=self.centering),
+                    nn.ReLU(True),
+                    nn.BatchNorm1d(linear_layer),
+                    nn.Dropout(0.25),
+                    nn.Linear(linear_layer, num_classes)
+                )
+            else:
+                self.classifier = nn.Sequential(
+                    nn.BatchNorm1d(final_filter*4),
+                    nn.Dropout(0.25),
+                    nn.Linear(final_filter*4, linear_layer),
+                    LinearPCALayer(linear_layer, thresh, centering=self.centering),
+                    nn.ReLU(True),
+                    nn.BatchNorm1d(linear_layer),
+                    nn.Dropout(0.25),
+                    nn.Linear(linear_layer, num_classes)
+                )
         else:
             self.classifier = nn.Sequential(
                 nn.BatchNorm1d(final_filter*(pool_size**2)),
@@ -932,7 +973,8 @@ class VGG(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = self.avgpool(x)
+        if not self.dense_classifier:
+            x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         if self.regress:
@@ -1225,6 +1267,15 @@ def vgg13PCA(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['B'], pca=True), add_pca_layers=True, **kwargs)
     model.name = "VGG13PCA"
+    return model
+
+def vgg13lin_readout(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['Blin'], pca=True), add_pca_layers=True, dense_classifier=True, **kwargs)
+    model.name = "VGG13Lin"
     return model
 
 def vgg13PCA_centered(*args, **kwargs):

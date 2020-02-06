@@ -7,6 +7,7 @@ import sys
 import types
 from pca_layers import change_all_pca_layer_thresholds
 from pca_layers import change_all_pca_layer_centering
+from thop import profile
 
 from trainer import Trainer
 
@@ -82,4 +83,7 @@ if __name__ == '__main__':
                                           saturation_device=args.sat_device,
                                           conv_method=conv_method,
                                           thresh=thresh)
+                        #input = torch.randn(1, 3, 32, 32)
+                        #flops, params = profile(model, inputs=(input,))
+                        #print(flops/1000000, 'MFLOP')
                         trainer.train()

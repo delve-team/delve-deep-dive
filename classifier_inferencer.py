@@ -3,12 +3,13 @@ import models
 import datasets
 import json
 import torch
+import numpy as np
 import sys
 import types
 from pca_layers import change_all_pca_layer_thresholds, change_all_pca_layer_thresholds_and_inject_random_directions
 from pca_layers import change_all_pca_layer_centering
 import pandas as pd
-
+from thop import profile
 from trainer import Trainer
 
 parser = argparse.ArgumentParser(description='Train a network on a dataset')
@@ -44,6 +45,11 @@ if __name__ == '__main__':
     accs = []
     losses = []
     inference_thresholds = []
+    dims = []
+    fdims = []
+    sats_l = []
+    sat_avg = []
+    datasets_csv = []
     if args.json_file is None:
         print('Starting manual run')
         train_loader, test_loader, shape, num_classes = parse_dataset(args.dataset_name, args.batch_size)
@@ -87,25 +93,47 @@ if __name__ == '__main__':
                                           saturation_device=args.sat_device,
                                           conv_method=conv_method,
                                           thresh=thresh)
-                        model.load_state_dict(torch.load(trainer.savepath.replace('.csv', '.pt'))['model_state_dict'])
+                        try:
+                            model.load_state_dict(torch.load(trainer.savepath.replace('.csv', '.pt'))['model_state_dict'])
+                        except:
+                            print('Loading model failed, proceeding')
+                            continue
                         print('Model loaded')
-                        for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 3.0]):
+                        for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 0.999, 0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
+                        #for eval_thresh in reversed([0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
                             #change_all_pca_layer_thresholds_and_inject_random_directions(eval_thresh, model, verbose=False)
-                            change_all_pca_layer_thresholds(eval_thresh, network=model)
+                            sat, indims, fsdims, lnames = change_all_pca_layer_thresholds(eval_thresh, network=model)
                             print('Changed model threshold to', eval_thresh)
                             model = model.to(trainer.device)
                             trainer.model = model
                             acc, loss = trainer.test(False)
-                            print('Acc:', acc, 'Loss:', loss, 'for', model.name, 'at threshold:', eval_thresh)
+                            print('InDims:', sum(indims), 'Acc:', acc, 'Loss:', loss, 'for', model.name, 'at threshold:', eval_thresh)
 
                             model_names.append(model.name)
                             accs.append(acc)
                             losses.append(loss)
+                            dims.append(sum(indims))
                             inference_thresholds.append(eval_thresh)
+                            fdims.append(sum(fsdims))
+                            sats_l =({name: [lsat] for name, lsat in zip(lnames, sat)})
+                            avg = np.mean(sat)
+                            sat_avg.append(avg)
+                            datasets_csv.append(dataset)
+
+                            sats_l['avg_sat'] = avg
+                            sats_l['loss'] = loss
+
+                            pd.DataFrame.from_dict(
+                                sats_l
+                            ).to_csv(f'{trainer.savepath.replace(".csv", "_if{}.csv".format(eval_thresh))}', sep=';')
 
                         pd.DataFrame.from_dict({
+                            'dataset': datasets_csv,
                             'loss': losses,
                             'model': model_names,
                             'accs': accs,
-                            'thresh': inference_thresholds
-                        }).to_csv('results_final_centering.csv', sep=';')
+                            'thresh': inference_thresholds,
+                            'intrinsic_dimensions': dims,
+                            'featurespace_dimension': fdims,
+                            'sat_avg': sat_avg
+                        }).to_csv('all_thresholds_vgg19.csv', sep=';')
