@@ -72,7 +72,6 @@ class DatasetMaker(Dataset):
 
         return bin_index, index_wrt_class
 
-
 def _get_n_fold_datasets_train(x_train, y_train, classDict, transformer, batch_size, class_names=['cat', 'dog']):
 
     # Let's choose cats (class 3 of CIFAR) and dogs (class 5 of CIFAR) as trainset/testset
@@ -253,7 +252,6 @@ class Dataset(torch.utils.data.Dataset):
         self._init_data()
         self._is_initialised = True
 
-
 class Food101Dataset(Dataset):
 
     def __init__(self, cache_dir, output_size=(512, 512)):
@@ -308,9 +306,9 @@ def Food101(batch_size=12, output_size=(256, 256),
 
 
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RS, RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RS, RHF, TT])
+    transform_with_aug = transforms.Compose([RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RS, RHF, TT])
     # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([RS, TT, NRM]) if not no_norm else transforms.Compose([RS, TT])
+    transform_no_aug = transforms.Compose([TT, NRM]) if not no_norm else transforms.Compose([RS, TT])
 
     train_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/train', transform=transform_with_aug)
     test_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/test', transform=transform_no_aug)
@@ -400,25 +398,20 @@ def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: 
     return train_loader, test_loader, (64, 64), 200
 
 
-def g2rgb(x):
-    return x.repeat(3, 1, 1)
-
-
 def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     # Transformations
-    RC = transforms.RandomCrop((28, 28), padding=3)
+    RC = transforms.RandomCrop((28, 28), padding=4)
     RHF = transforms.RandomHorizontalFlip()
     RVF = transforms.RandomVerticalFlip()
     NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     TT = transforms.ToTensor()
     TPIL = transforms.ToPILImage()
     RS = transforms.Resize(224)
-    RGB = transforms.Lambda(g2rgb)
 
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RC, RHF, TT, RGB, NRM])
+    transform_with_aug = transforms.Compose([RC, RHF, TT])
     # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([TT, RGB, NRM])
+    transform_no_aug = transforms.Compose([TT])
 
 
     trainset = torchvision.datasets.MNIST(root=cache_dir, train=True,
@@ -433,36 +426,9 @@ def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     return train_loader, test_loader, (28, 28), 10
 
 
-def FashionMNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
-    # Transformations
-    RC = transforms.RandomCrop((28, 28), padding=3)
-    RHF = transforms.RandomHorizontalFlip()
-    RVF = transforms.RandomVerticalFlip()
-    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    TT = transforms.ToTensor()
-    TPIL = transforms.ToPILImage()
-    RS = transforms.Resize(224)
-    RGB = transforms.Lambda(g2rgb)
-
-    # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RC, RHF, TT, RGB, NRM])
-    # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([TT, RGB, NRM])
-
-
-    trainset = torchvision.datasets.FashionMNIST(root=cache_dir, train=True,
-                                            download=True, transform=transform_with_aug)
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                              shuffle=True, num_workers=3, pin_memory=False)
-    testset = torchvision.datasets.FashionMNIST(root=cache_dir, train=False,
-                                           download=True, transform=transform_no_aug)
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                             shuffle=False, num_workers=3, pin_memory=False)
-    train_loader.name = "FashionMNIST"
-    return train_loader, test_loader, (28, 28), 10
-
-
-def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
+def Cifar10(batch_size=12, output_size=(32,32), cache_dir='tmp'):
+    if output_size != (32,32):
+        raise RuntimeError("Cifar10 only supports 32x32 images!")
 
     # Transformations
     RC = transforms.RandomCrop((32, 32), padding=4)
@@ -490,9 +456,9 @@ def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10
 
-
 def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
-
+    if output_size != (32,32):
+        raise RuntimeError("Cifar100 only supports 32x32 images!")
 
     # Transformations
     RC = transforms.RandomCrop((32, 32), padding=4)
@@ -501,12 +467,12 @@ def Cifar100(batch_size=12, output_size=(32,32), cache_dir='tmp'):
     NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     TT = transforms.ToTensor()
     TPIL = transforms.ToPILImage()
-    RS = transforms.Resize(224)
 
     # Transforms object for trainset with augmentation
     transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
     # Transforms object for testset with NO augmentation
     transform_no_aug = transforms.Compose([TT, NRM])
+
 
     trainset = torchvision.datasets.CIFAR100(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
@@ -569,8 +535,8 @@ def ImageNet(batch_size=12, output_size=(224,224), cache_dir='tmp'):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    trainset = torchvision.datasets.ImageFolder(root=".\\tmp\\ImageNet\\train", transform=train_tfms)
-    testset = torchvision.datasets.ImageFolder(root=".\\tmp\\ImageNet\\valid", transform=val_tfms)
+    trainset = torchvision.datasets.ImageFolder(root="G:\\ImageNet\\train", transform=train_tfms)
+    testset = torchvision.datasets.ImageFolder(root="G:\\ImageNet\\valid", transform=val_tfms)
 
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                                shuffle=True, num_workers=6, pin_memory=False)

@@ -1,8 +1,0 @@
-{
-  "models" : ["vggO7"],
-
-  "dataset": "Cifar10",
-  "epochs":   30,
-  "batch_sizes": [32],
-  "optimizer": "adam"
-}

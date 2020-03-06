@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from delve.torchcallback import CheckLayerSat
-from delve.writers import CSVandPlottingWriter
+from delve.writers import CSVandPlottingWriter, NPYWriter
 import os
 from datetime import datetime
 import pandas as pd
@@ -19,7 +19,7 @@ def accuracy(output, target, topk=(1,)):
 
     _, pred = output.topk(maxk, 1, True, True)
     pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
+    correct = pred.eq(target.view(1, -1).expand_as(pred).long())
 
     res = []
     for k in topk:
@@ -47,7 +47,8 @@ class Trainer:
                  compute_top_k=False,
                  data_prallel=False,
                  conv_method='channelwise',
-                 thresh=.99):
+                 thresh=.99,
+                 half_precision=False):
         self.saturation_device = device if saturation_device is None else saturation_device
         self.device = device
         self.model = model
@@ -94,25 +95,64 @@ class Trainer:
 
             if trained_epochs >= epochs:
                 self.experiment_done = True
-                print(f'Experiment Logs for the exact same experiment with identical run_id was detecting, training will be skipped, consider using another run_id')
-        self.parallel = data_prallel
-        if data_prallel:
-            self.model = nn.DataParallel(self.model, ['cuda:0', 'cuda:1'])
+                print(f'Experiment Logs for the exact same experiment with identical run_id was detected, training will be skipped, consider using another run_id')
+                return
+        if os.path.exists((self.savepath.replace('.csv', '.pt'))):
+            print('Resuming existing run...')
+            self.model.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['model_state_dict'])
+            if data_prallel:
+                self.model = nn.DataParallel(self.model)
+            else:
+                self.model = self.model.to(self.device)
+            if half_precision:
+                self.model = self.model.half()
+            self.optimizer.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['optimizer'])
+            self.start_epoch = torch.load(self.savepath.replace('.csv', '.pt'))['epoch'] + 1
+            initial_epoch = self._infer_initial_epoch(self.savepath)
+        else:
+            if half_precision:
+                self.model = self.model.half()
+            self.start_epoch = 0
+            initial_epoch = 0
+            self.parallel = data_prallel
+            if data_prallel:
+                self.model = nn.DataParallel(self.model)
+            else:
+                self.model = self.model.to(self.device)
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
+        writer2 = NPYWriter(self.savepath.replace('.csv', ''))
         self.pooling_strat = conv_method
         print('Settomg Satiraton recording threshold to', thresh)
-        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''), writer, model, ignore_layer_names='convolution', stats=['lsat'], sat_threshold=.99, verbose=False, conv_method=conv_method, log_interval=1, device=self.saturation_device, reset_covariance=True, max_samples=None)
+        self.half = half_precision
+
+        self.stats = CheckLayerSat(self.savepath.replace('.csv', ''),
+                                   [writer, writer2],
+                                   model, ignore_layer_names='convolution',
+                                   stats=['lsat', 'idim', 'cov'],
+                                   sat_threshold=.99, verbose=False,
+                                   conv_method=conv_method, log_interval=1,
+                                   device=self.saturation_device, reset_covariance=True,
+                                   max_samples=None, initial_epoch=initial_epoch, interpolation_strategy='nearest',
+                                   interpolation_downsampling=32)
+
+    def _infer_initial_epoch(self, savepath):
+        if not os.path.exists(savepath):
+            return 0
+        else:
+            df = pd.read_csv(savepath, sep=';', index_col=0)
+            print(len(df)+1)
+            return len(df)
 
     def train(self):
         if self.experiment_done:
             return
-        self.model.to(self.device)
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
+            print('Start training epoch', epoch)
             print("{} Epoch {}, training loss: {}, training accuracy: {}".format(now(), epoch, *self.train_epoch()))
-            self.test()
+            self.test(epoch=epoch)
             if self.opt_name == "LRS":
                 print('LRS step')
-                self.lr_scheduler.step()
+                self.lr_scheduler.step() 
             self.stats.add_saturations()
             #self.stats.save()
             #if self.plot:
@@ -132,7 +172,10 @@ class Trainer:
                 print(batch, 'of', len(self.train_loader), 'processing time', time()-old_time, "top5_acc:" if self.compute_top_k else 'acc:', round(top5_accumulator/(batch),3) if self.compute_top_k else correct/total)
                 old_time = time()
             inputs, labels = data
-            inputs, labels = inputs.to(self.device), labels.to(self.device)
+            if self.half:
+                inputs, labels = inputs.to(self.device).half(), labels.to(self.device)
+            else:
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
@@ -141,10 +184,10 @@ class Trainer:
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
 
-            correct += (predicted == labels).sum().item()
             loss = self.criterion(outputs, labels)
             loss.backward()
             self.optimizer.step()
+            correct += (predicted == labels.long()).sum().item()
 
             running_loss += loss.item()
         self.stats.add_scalar('training_loss', running_loss/total)
@@ -154,7 +197,7 @@ class Trainer:
             self.stats.add_scalar('training_accuracy', correct/total)
         return running_loss/total, correct/total
 
-    def test(self, save=True):
+    def test(self, epoch, save=True):
         self.model.eval()
         correct = 0
         total = 0
@@ -163,12 +206,15 @@ class Trainer:
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
                 inputs, labels = data
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                if self.half:
+                    inputs, labels = inputs.to(self.device).half(), labels.to(self.device)
+                else:
+                    inputs, labels = inputs.to(self.device), labels.to(self.device)
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+                correct += (predicted == labels.long()).sum().item()
                 if self.compute_top_k:
                     top5_accumulator += accuracy(outputs, labels, (5,))[0]
                 test_loss += loss.item()
@@ -182,6 +228,11 @@ class Trainer:
             self.stats.add_scalar('test_accuracy', correct/total)
             print('{} Test Accuracy on {} images: {:.4f}'.format(now(), total, correct/total))
         if save:
-            torch.save({'model_state_dict': self.model.state_dict()}, self.savepath.replace('.csv', '.pt'))
+            torch.save({
+                'model_state_dict': self.model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+                'epoch': epoch,
+                'test_loss': test_loss / total
+            }, self.savepath.replace('.csv', '.pt'))
         return correct / total, test_loss / total
 

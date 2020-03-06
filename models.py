@@ -5,7 +5,7 @@ import torchvision
 from math import floor
 from operator import mul
 from pca_layers import Conv2DPCALayer, LinearPCALayer
-from torchvision.models import ResNet
+from torchvision.models import ResNet, vgg19_bn as vgg19_orig
 
 
 def Inception3(input_size=(32,32), num_classes=10):
@@ -28,6 +28,12 @@ model_urls = {
     'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
 }
+
+
+def VGG19(num_classes, *args, **kwargs):
+    net = vgg19_orig(pretrained=False, num_classes=num_classes)
+    net.name = 'VGG19'
+    return net
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -101,17 +107,17 @@ class Bottleneck(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.conv1PCA(out)
+       # out = self.conv1PCA(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.conv2PCA(out)
+        #out = self.conv2PCA(out)
         out = self.bn2(out)
         out = self.relu(out)
 
         out = self.conv3(out)
-        out = self.conv3PCA(out)
+       # out = self.conv3PCA(out)
         out = self.bn3(out)
 
         if self.downsample is not None:
@@ -648,7 +654,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999, centering=False):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False, thresh=.999, centering=False):
     layers = []
     for v in cfg:
         if v == 'M':
@@ -921,7 +927,7 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False,
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=False, thresh=.99, centering=False,
                  dense_classifier: bool = False):
         super(VGG, self).__init__()
         self.dense_classifier = dense_classifier
@@ -959,15 +965,26 @@ class VGG(nn.Module):
                     nn.Linear(linear_layer, num_classes)
                 )
         else:
-            self.classifier = nn.Sequential(
-                nn.BatchNorm1d(final_filter*(pool_size**2)),
-                nn.Dropout(0.25),
-                nn.Linear(final_filter*(pool_size**2), linear_layer),
-                nn.ReLU(True),
-                nn.BatchNorm1d(linear_layer),
-                nn.Dropout(0.25),
-                nn.Linear(linear_layer, num_classes)
-            )
+            if not dense_classifier:
+                self.classifier = nn.Sequential(
+                    nn.BatchNorm1d(final_filter*(pool_size**2)),
+                    nn.Dropout(0.25),
+                    nn.Linear(final_filter*(pool_size**2), linear_layer),
+                    nn.ReLU(True),
+                    nn.BatchNorm1d(linear_layer),
+                    nn.Dropout(0.25),
+                    nn.Linear(linear_layer, num_classes)
+                )
+            else:
+                self.classifier = nn.Sequential(
+                    nn.BatchNorm1d(final_filter*4),
+                    nn.Dropout(0.25),
+                    nn.Linear(final_filter*4, linear_layer),
+                    nn.ReLU(True),
+                    nn.BatchNorm1d(linear_layer),
+                    nn.Dropout(0.25),
+                    nn.Linear(linear_layer, num_classes)
+                )
         if init_weights:
             self._initialize_weights()
 
