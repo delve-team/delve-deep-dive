@@ -58,8 +58,12 @@ for t in df.thresh.unique():
         intr_v = np.var(intr, axis, ddof=1)
         intr_sdev = np.sqrt(intr_v)
 
-        significant = "Yes" if result.pvalue < p_threshold else "No"
-        print(f"{t:1.4g} & {m:.4f}  & {sdev:.4f} & {result.statistic: .4g} & {1-result.pvalue:.3f} & {significant} & {sat_m:.1f} & {sat_sdev:.1f} & {intr_m:.0f} & {intr_sdev:.1f} \\\\")
+        if result.pvalue < p_threshold:
+            start, end = "\\textbf{", "}"
+        else:
+            start, end = "", ""
+        error_dim = intr_sdev * 1.96
+        print(f"{start}{t:1.4g}{end}& {m:.4f}  & {sdev:.4f} & {result.statistic: .3g} & {result.pvalue:.3f} & {sat_m:.1f} & {sat_sdev:.1f} & ${intr_m:.0f} \\pm {error_dim:.0f}$ \\\\")
     except Exception as e:
         print(t, e)
         pass
@@ -86,8 +90,12 @@ for t in df.thresh.unique():
         intr_m = np.mean(intr)
         intr_v = np.var(intr, axis, ddof=1)
         intr_sdev = np.sqrt(intr_v)
-        significant = "Yes" if result.pvalue < p_threshold else "No"
-        print(f"{t:1.4g} & {result.statistic: .4g} & {1-result.pvalue:.3f} & {sat_m:.1f} & {sat_sdev:.1f} & {intr_m:.0f} \\\\")
+        if result.pvalue < p_threshold:
+            start, end = "\\textbf{", "}"
+        else:
+            start, end = "", ""
+        error_dim = intr_sdev * 1.96
+        print(f"{t:1.4g} & {result.statistic: .3g} & {result.pvalue:.3f} & {sat_m:.1f} & {sat_sdev:.1f} & ${intr_m:.0f} \\pm {error_dim:.0f}$ \\\\")
     except Exception as e:
         print(t, e)
 

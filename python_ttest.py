@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import ttest_ind, ttest_rel
+import matplotlib.pyplot as plt
 
 df = pd.read_excel("vgg13_analysis.ods", engine="odf")
 #df = pd.read_csv("vgg13_analysis.csv")
@@ -18,9 +19,12 @@ for t in df.thresh.unique():
     data[t] = accs
 
 
-important_thresholds = [0.9999,0.9998,0.9990000000000001,0.998,0.996,0.9940000000000001,0.99]
+important_thresholds = [0.9999,0.9998,0.999,0.998,0.996,0.994,0.99]
 
-
+means = []
+ranges_99 = []
+errors = []
+print(df.thresh.unique())
 print(f"Thresh & \mu & \sigma & t-stat & p-value \\\\")
 for t in df.thresh.unique():
     try:
@@ -32,8 +36,14 @@ for t in df.thresh.unique():
         m = np.mean(d, axis)
         v = np.var(d, axis, ddof=1)
         sdev = np.sqrt(v)
+        means.append(1-m)
+        errors.append(2.58 * sdev / np.sqrt(26))
         significant = "Yes" if result.pvalue < p_threshold else "No"
-        print(f"{t:1.4g} & {m:.4f}  & {sdev:.4f} & {result.statistic: .4g} & {1-result.pvalue:.3f} & {significant} \\\\")
+        if result.pvalue < p_threshold:
+            start, end = "\\textbf{", "}"
+        else:
+            start, end = "", ""
+        print(f"{start}{t:1.4g}{end} & {m:.4f}  & {sdev:.4f} & {result.statistic: .3g} & {result.pvalue:.9f}  \\\\")
     except Exception as e:
         print(t, e)
 
@@ -50,9 +60,22 @@ for t in df.thresh.unique():
         m = np.mean(d, axis)
         v = np.var(d, axis, ddof=1)
         sdev = np.sqrt(v)
-        significant = "Yes" if result.pvalue < p_threshold else "No"
-        print(f"{t:1.4g} & {m:.4f}  & {sdev:.4f} & {result.statistic: .4g} & {1-result.pvalue:.3f} & {significant} \\\\")
+        if result.pvalue < p_threshold:
+            start, end = "\\textbf{", "}"
+        else:
+            start, end = "", ""
+        print(f"{start}{t:1.4g}{end} & {m:.4f}  & {sdev:.4f} & {result.statistic: .3g} & {result.pvalue:.3f} \\\\")
     except Exception as e:
         print(t, e)
         
-print (",".join(list(df.thresh.unique())))
+#print (",".join(list(df.thresh.unique())))
+
+#means = np.array(means)
+#errors = np.array(errors)
+#ax = df.thresh.unique()
+#ax[0] = 1.0
+#print(df.thresh.unique()[1:])
+#plt.plot(ax[:15], means[:15])
+#plt.errorbar(ax[:15], means[:15], yerr=errors[:15])
+##plt.xscale('log')
+#plt.show()
