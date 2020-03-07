@@ -86,7 +86,8 @@ if __name__ == '__main__':
                                               saturation_device=args.sat_device,
                                               conv_method=conv_method,
                                               thresh=thresh,
-                                              downsampling=dwnsmpl)
+                                              downsampling=dwnsmpl,
+                                              half_precision=True)
                             #input = torch.randn(1, 3, 32, 32)
                             #flops, params = profile(model, inputs=(input,))
                             #print(flops/1000000, 'MFLOP')
