@@ -654,7 +654,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False, thresh=.999, centering=False):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999, centering=True, downsampling=None):
     layers = []
     for v in cfg:
         if v == 'M':
@@ -662,7 +662,7 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=False, thresh
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=k_size-2)
             if batch_norm and pca:
-                layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh, centering=centering), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh, centering=centering, downsampling=True), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             elif batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -927,7 +927,7 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=False, thresh=.99, centering=False,
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False,
                  dense_classifier: bool = False):
         super(VGG, self).__init__()
         self.dense_classifier = dense_classifier

@@ -3,6 +3,7 @@ from torch.nn import Module
 from numpy.linalg import matrix_rank
 from numpy.random import uniform
 import numpy as np
+from torch.nn.functional import interpolate
 
 global num
 
@@ -88,13 +89,16 @@ def change_all_pca_layer_thresholds(threshold: float, network: Module, verbose: 
     return sat, in_dims, fs_dims, names
 
 
-def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bool = False):
+def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bool = False, downsampling=None):
     in_dims = []
     fs_dims = []
     sat = []
     for module in network.modules():
         if isinstance(module, Conv2DPCALayer) or isinstance(module, LinearPCALayer):
             module.centering = centering
+            if isinstance(module, Conv2DPCALayer):
+                print('Changed downsampling to ', downsampling)
+                module.downsampling = downsampling
             in_dims.append(module.in_dim)
             fs_dims.append(module.fs_dim)
             sat.append(module.sat)
@@ -112,7 +116,7 @@ class LinearPCALayer(Module):
                  keepdim: bool = True,
                  verbose: bool = False,
                  gradient_epoch_start: int = 20,
-                 centering: bool = False):
+                 centering: bool = True):
         super(LinearPCALayer, self).__init__()
         self.register_buffer('eigenvalues', torch.zeros(in_features, dtype=torch.float64))
         self.register_buffer('eigenvectors', torch.zeros((in_features, in_features), dtype=torch.float64))
@@ -232,7 +236,7 @@ class LinearPCALayer(Module):
 
 class Conv2DPCALayer(LinearPCALayer):
 
-    def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 20, centering: bool = False):
+    def __init__(self, in_filters, threshold: float = 0.99, verbose: bool = True, gradient_epoch_start: int = 20, centering: bool = False, downsampling: int = None):
         super(Conv2DPCALayer, self).__init__(centering=centering, in_features=in_filters, threshold=threshold, keepdim=True, verbose=verbose, gradient_epoch_start=gradient_epoch_start)
         if verbose:
             print('Added Conv2D PCA Layer')
@@ -245,7 +249,7 @@ class Conv2DPCALayer(LinearPCALayer):
         self.mean_subtracting_convolution.weight = torch.nn.Parameter(
             torch.zeros((in_filters, in_filters)).unsqueeze(2).unsqueeze(3)
         )
-
+        self.downsampling = downsampling
 
     def _compute_pca_matrix(self):
         if self.verbose:
@@ -279,7 +283,11 @@ class Conv2DPCALayer(LinearPCALayer):
     def forward(self, x):
         if self.training:
             self.pca_computed = False
-            swapped: torch.Tensor = x.permute([1, 0, 2, 3])
+            if self.downsampling is not None:
+                x1 = interpolate(x, size=self.downsampling, mode='nearest')
+            else:
+                x1 = x
+            swapped: torch.Tensor = x1.permute([1, 0, 2, 3])
             flattened: torch.Tensor = swapped.flatten(1)
             reshaped_batch: torch.Tensor = flattened.permute([1, 0])
             self._update_autorcorrelation(reshaped_batch)

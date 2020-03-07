@@ -48,7 +48,8 @@ class Trainer:
                  data_prallel=False,
                  conv_method='channelwise',
                  thresh=.99,
-                 half_precision=False):
+                 half_precision=False,
+                 downsampling=None):
         self.saturation_device = device if saturation_device is None else saturation_device
         self.device = device
         self.model = model
@@ -88,7 +89,7 @@ class Trainer:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        self.savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_t{int(thresh*1000)}_id{run_id}.csv')
+        self.savepath = os.path.join(save_dir, f'{model.name}_bs{batch_size}_e{epochs}_dspl{downsampling}_t{int(thresh*1000)}_id{run_id}.csv')
         self.experiment_done = False
         if os.path.exists(self.savepath):
             trained_epochs = len(pd.read_csv(self.savepath, sep=';'))
@@ -126,14 +127,14 @@ class Trainer:
         self.half = half_precision
 
         self.stats = CheckLayerSat(self.savepath.replace('.csv', ''),
-                                   [writer, writer2],
+                                   [writer],
                                    model, ignore_layer_names='convolution',
-                                   stats=['lsat', 'idim', 'cov'],
+                                   stats=['lsat', 'idim'],
                                    sat_threshold=.99, verbose=False,
                                    conv_method=conv_method, log_interval=1,
                                    device=self.saturation_device, reset_covariance=True,
-                                   max_samples=None, initial_epoch=initial_epoch, interpolation_strategy='nearest',
-                                   interpolation_downsampling=32)
+                                   max_samples=None, initial_epoch=initial_epoch, interpolation_strategy='nearest' if downsampling is not None else None,
+                                   interpolation_downsampling=downsampling)
 
     def _infer_initial_epoch(self, savepath):
         if not os.path.exists(savepath):
