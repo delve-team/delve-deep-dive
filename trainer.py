@@ -9,6 +9,7 @@ from datetime import datetime
 import pandas as pd
 from radam import RAdam
 from time import time
+from pca_layers import LinearPCALayer, Conv2DPCALayer
 from pca_layers import change_all_pca_layer_thresholds
 from saturation_plotter import plot_saturation_level_from_results
 
@@ -135,6 +136,7 @@ class Trainer:
                                    device=self.saturation_device, reset_covariance=True,
                                    max_samples=None, initial_epoch=initial_epoch, interpolation_strategy='nearest' if downsampling is not None else None,
                                    interpolation_downsampling=downsampling)
+
 
     def _infer_initial_epoch(self, savepath):
         if not os.path.exists(savepath):

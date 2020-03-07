@@ -135,6 +135,10 @@ class LinearPCALayer(Module):
         self._centering = centering
         self.data_dtype = None
 
+        
+    def is_floating_point(self):
+        return False
+
     @property
     def threshold(self) -> float:
         return self._threshold
