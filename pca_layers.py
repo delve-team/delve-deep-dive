@@ -157,6 +157,7 @@ class LinearPCALayer(Module):
         if self.data_dtype is None:
             self.data_dtype = x.dtype
         x = x.type(torch.float64)
+        print(x.dtype)
         self.sum_squares.data += torch.matmul(x.transpose(0, 1), x)
         self.running_sum += x.sum(dim=0)
         self.seen_samples.data += x.shape[0]
@@ -174,7 +175,7 @@ class LinearPCALayer(Module):
         
         #np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
         #np.save(self.name+'_mean.npy', self.mean.cpu().numpy())
-        return cov_mtx.long()
+        return cov_mtx
 
     def _compute_eigenspace(self):
         self.eigenvalues.data, self.eigenvectors.data = self._compute_autorcorrelation().symeig(True).type(self.data_dtype)
