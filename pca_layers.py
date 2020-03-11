@@ -169,12 +169,12 @@ class LinearPCALayer(Module):
     def _compute_autorcorrelation(self) -> torch.Tensor:
         tlen = self.seen_samples
         cov_mtx = self.sum_squares
+        cov_mtx = cov_mtx/tlen
         avg = self.running_sum / tlen
         if self.centering:
             avg_mtx = torch.ger(avg, avg)
             cov_mtx = cov_mtx - avg_mtx
 
-            cov_mtx = cov_mtx/tlen
         #self.mean.data = avg.type(torch.float32)
         
         #np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
