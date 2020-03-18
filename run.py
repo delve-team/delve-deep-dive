@@ -87,7 +87,7 @@ if __name__ == '__main__':
                                               conv_method=conv_method,
                                               thresh=thresh,
                                               downsampling=dwnsmpl,
-                                              half_precision=True)
+                                              half_precision=False)
                             #input = torch.randn(1, 3, 32, 32)
                             #flops, params = profile(model, inputs=(input,))
                             #print(flops/1000000, 'MFLOP')

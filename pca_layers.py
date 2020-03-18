@@ -135,7 +135,6 @@ class LinearPCALayer(Module):
         self._centering = centering
         self.data_dtype = None
 
-        
     def is_floating_point(self):
         return False
 
@@ -161,7 +160,7 @@ class LinearPCALayer(Module):
         if self.data_dtype is None:
             self.data_dtype = x.dtype
         x = x.type(torch.float64)
-        print(x.dtype)
+       # print(x.dtype)
         self.sum_squares.data += torch.matmul(x.transpose(0, 1), x)
         self.running_sum += x.sum(dim=0)
         self.seen_samples.data += x.shape[0]
@@ -169,20 +168,17 @@ class LinearPCALayer(Module):
     def _compute_autorcorrelation(self) -> torch.Tensor:
         tlen = self.seen_samples
         cov_mtx = self.sum_squares
+        cov_mtx = cov_mtx/tlen
         avg = self.running_sum / tlen
         if self.centering:
             avg_mtx = torch.ger(avg, avg)
             cov_mtx = cov_mtx - avg_mtx
-
-            cov_mtx = cov_mtx/tlen
-        #self.mean.data = avg.type(torch.float32)
-        
         #np.save(self.name+'_cov_mtx.npy', cov_mtx.cpu().numpy())
         #np.save(self.name+'_mean.npy', self.mean.cpu().numpy())
         return cov_mtx
 
     def _compute_eigenspace(self):
-        self.eigenvalues.data, self.eigenvectors.data = self._compute_autorcorrelation().symeig(True).type(self.data_dtype)
+        self.eigenvalues.data, self.eigenvectors.data = self._compute_autorcorrelation().symeig(True)#.type(self.data_dtype)
         self.eigenvalues.data, idx = self.eigenvalues.sort(descending=True)
         # correct numerical error, matrix must be positivly semi-definitie
         self.eigenvalues[self.eigenvalues < 0] = 0

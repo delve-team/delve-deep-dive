@@ -13,6 +13,7 @@ from pca_layers import LinearPCALayer, Conv2DPCALayer
 from pca_layers import change_all_pca_layer_thresholds
 from saturation_plotter import plot_saturation_level_from_results
 
+
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
@@ -27,6 +28,7 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size).item())
     return res
+
 
 def now():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -98,7 +100,6 @@ class Trainer:
             if trained_epochs >= epochs:
                 self.experiment_done = True
                 print(f'Experiment Logs for the exact same experiment with identical run_id was detected, training will be skipped, consider using another run_id')
-                return
         if os.path.exists((self.savepath.replace('.csv', '.pt'))):
             print('Resuming existing run...')
             self.model.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['model_state_dict'])
