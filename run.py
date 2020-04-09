@@ -51,7 +51,7 @@ if __name__ == '__main__':
         print('Automatized experiment schedule enabled using', args.json_file)
         config_dict = json.load(open(args.json_file, 'r'))
         thresholds = [.99] if not 'threshs' in config_dict else config_dict['threshs']
-        downsampling = [None] if not 'downsampling' in config_dict else config_dict['downsampling'] + [None]
+        downsampling = [None] if not 'downsampling' in config_dict else config_dict['downsampling']
         dss = config_dict['dataset'] if isinstance(config_dict['dataset'], list) else [config_dict['dataset']]
         optimizer = config_dict['optimizer']
         run_num = 0

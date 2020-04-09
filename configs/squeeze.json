@@ -1,5 +1,10 @@
 {
-  "models" : ["resnet18", "resnet34", "resnet50", "resnet101"],
+  "models" : [
+    "squeezenet10",
+    "squeezenet11",
+    "mobilenetV2",
+    "inceptionv3"
+  ],
   "dataset": ["Cifar10"],
   "epochs":   30,
   "batch_sizes": [128],

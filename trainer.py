@@ -77,7 +77,7 @@ class Trainer:
             self.optimizer = optim.Adam(model.parameters(), lr=0.01)
         elif optimizer == "SGD":
             print('Using SGD')
-            self.optimizer = optim.SGD(model.parameters(), lr=0.5, momentum=0.9)
+            self.optimizer = optim.SGD(model.parameters(), lr=0.0, momentum=0.9)
         elif optimizer == "LRS":
             print('Using LRS')
             self.optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -101,7 +101,6 @@ class Trainer:
                 self.experiment_done = True
                 print(f'Experiment Logs for the exact same experiment with identical run_id was detected, training will be skipped, consider using another run_id')
         if os.path.exists((self.savepath.replace('.csv', '.pt'))):
-            print('Resuming existing run...')
             self.model.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['model_state_dict'])
             if data_prallel:
                 self.model = nn.DataParallel(self.model)
@@ -112,6 +111,7 @@ class Trainer:
             self.optimizer.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['optimizer'])
             self.start_epoch = torch.load(self.savepath.replace('.csv', '.pt'))['epoch'] + 1
             initial_epoch = self._infer_initial_epoch(self.savepath)
+            print('Resuming existing run, starting at epoch', self.start_epoch, 'from', self.savepath.replace('.csv', '.pt'))
         else:
             if half_precision:
                 self.model = self.model.half()
@@ -151,6 +151,8 @@ class Trainer:
         if self.experiment_done:
             return
         for epoch in range(self.start_epoch, self.epochs):
+            #self.test(epoch=epoch)
+
             print('Start training epoch', epoch)
             print("{} Epoch {}, training loss: {}, training accuracy: {}".format(now(), epoch, *self.train_epoch()))
             self.test(epoch=epoch)
@@ -209,6 +211,8 @@ class Trainer:
         top5_accumulator = 0
         with torch.no_grad():
             for batch, data in enumerate(self.test_loader):
+                if batch%10 == 0:
+                    print('Processing eval batch', batch,'of', len(self.test_loader))
                 inputs, labels = data
                 if self.half:
                     inputs, labels = inputs.to(self.device).half(), labels.to(self.device)

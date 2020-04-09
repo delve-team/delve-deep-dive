@@ -1,0 +1,11 @@
+{
+  "models" : ["pretrainedVGG16", "pretrainedVGG19", "pretrainedResNet34"],
+  "dataset": ["ImageNet"],
+  "epochs":   1,
+  "batch_sizes": [32],
+  "optimizer": "SGD",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

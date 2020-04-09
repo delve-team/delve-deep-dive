@@ -96,6 +96,7 @@ def change_all_pca_layer_centering(centering: bool, network: Module, verbose: bo
     for module in network.modules():
         if isinstance(module, Conv2DPCALayer) or isinstance(module, LinearPCALayer):
             module.centering = centering
+            module.verbose = False
             if isinstance(module, Conv2DPCALayer):
                 print('Changed downsampling to ', downsampling)
                 module.downsampling = downsampling
@@ -197,16 +198,18 @@ class LinearPCALayer(Module):
         eigen_space = self.eigenvectors[:, percentages < self.threshold]
         if eigen_space.shape[1] == 0:
             eigen_space = self.eigenvectors[:, :1]
-            print(f'Detected singularity defaulting to single dimension {eigen_space.shape}')
+            if self.verbose:
+                print(f'Detected singularity defaulting to single dimension {eigen_space.shape}')
         elif self.threshold - (percentages[percentages < self.threshold][-1]) > 0.02:
-            print(f'Highest cumvar99 is {percentages[percentages < self.threshold][-1]}, extending eigenspace by one dimension for eigenspace of {eigen_space.shape}')
+            if self.verbose:
+                print(f'Highest cumvar99 is {percentages[percentages < self.threshold][-1]}, extending eigenspace by one dimension for eigenspace of {eigen_space.shape}')
             eigen_space = self.eigenvectors[:, :eigen_space.shape[1]+1]
 
         sat = round((eigen_space.shape[1] / self.eigenvalues.shape[0])*100, 4)
         fs_dim = eigen_space.shape[0]
         in_dim = eigen_space.shape[1]
         if self.verbose:
-            print(f'Saturation: {round(eigen_space.shape[1] / self.eigenvalues.shape[0], 4)}%', 'Eigenspace has shape', eigen_space.shape)
+            print(f'Saturation: {round(100*(eigen_space.shape[1] / self.eigenvalues.shape[0]), 4)}%', 'Eigenspace has shape', eigen_space.shape)
         self.transformation_matrix: torch.Tensor = eigen_space.matmul(eigen_space.t()).type(torch.float32)
         self.reduced_transformation_matrix: torch.Tensor = eigen_space.type(torch.float32)
         self.sat, self.in_dim, self.fs_dim = sat, in_dim, fs_dim

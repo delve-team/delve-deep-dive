@@ -5,8 +5,9 @@ import torchvision
 from math import floor
 from operator import mul
 from pca_layers import Conv2DPCALayer, LinearPCALayer
-from torchvision.models import ResNet, vgg19_bn as vgg19_orig
+from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
 
+PCA = False
 
 def Inception3(input_size=(32,32), num_classes=10):
     model = torchvision.models.inception.Inception3(num_classes=num_classes)
@@ -15,6 +16,76 @@ def Inception3(input_size=(32,32), num_classes=10):
 
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
+
+
+######################## POST ICML MODEL #########################
+
+def squeezenet10(num_classes, *args, **kwargs):
+    model = torchvision.models.squeezenet1_0(pretrained=False, num_classes=num_classes)
+    model.name = 'Squeezenet10'
+    return model
+
+def squeezenet11(num_classes, *args, **kwargs):
+    model = torchvision.models.squeezenet1_1(pretrained=False, num_classes=num_classes)
+    model.name = 'Squeezenet11'
+    return model
+
+
+def densenet121(num_classes, *args, **kwargs):
+    model = torchvision.models.densenet121(pretrained=False, num_classes=num_classes)
+    model.name = 'DenseNet121'
+    return model
+
+def densenet169(num_classes, *args, **kwargs):
+    model = torchvision.models.densenet169(pretrained=False, num_classes=num_classes)
+    model.name = 'DenseNet169'
+    return model
+
+def densenet161(num_classes, *args, **kwargs):
+    model = torchvision.models.densenet161(pretrained=False, num_classes=num_classes)
+    model.name = 'DenseNet161'
+    return model
+
+def densenet201(num_classes, *args, **kwargs):
+    model = torchvision.models.densenet201(pretrained=False, num_classes=num_classes)
+    model.name = 'DenseNet201'
+    return model
+
+
+def mobilenetV2(num_classes, *args, **kwargs):
+    model = torchvision.models.mobilenet_v2(pretrained=False, num_classes=num_classes)
+    model.name = 'MobileNetV2'
+
+
+
+def mnasnet05(num_classes, *args, **kwargs):
+    model = torchvision.models.mnasnet0_5(pretrained=False, num_classes=num_classes)
+    model.name = 'MNasNet05'
+    return model
+
+def mnasnet075(num_classes, *args, **kwargs):
+    model = torchvision.models.mnasnet0_75(pretrained=False, num_classes=num_classes)
+    model.name = 'MNasNet075'
+    return model
+
+def mnasnet10(num_classes, *args, **kwargs):
+    model = torchvision.models.mnasnet1_0(pretrained=False, num_classes=num_classes)
+    model.name = 'MNasNet10'
+    return model
+
+def mnasnet13(num_classes, *args, **kwargs):
+    model = torchvision.models.mnasnet1_3(pretrained=False, num_classes=num_classes)
+    model.name = 'MNasNet13'
+    return model
+
+
+def inceptionv3(num_classes, *args, **kwargs):
+    model = torchvision.models.inception_v3(pretrained=False, num_classes=num_classes)
+    model.name = 'IncetionV3'
+    return model
+
+##################################################################
+
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -29,8 +100,25 @@ model_urls = {
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
 }
 
+def pretrainedResNet151(num_classes, *args, **kwargs):
+    net = resnet152_orig(pretrained=True, num_classes=num_classes)
+    net.name = 'ResNet152'
+    return net
 
-def VGG19(num_classes, *args, **kwargs):
+
+def pretrainedResNet34(num_classes, *args, **kwargs):
+    net = resnet34_orig(pretrained=True, num_classes=num_classes)
+    net.name = 'ResNet34'
+    return net
+
+
+def pretrainedVGG16(num_classes, *args, **kwargs):
+    net = vgg16_orig(pretrained=False, num_classes=num_classes)
+    net.name = 'VGG16'
+    return net
+
+
+def pretrainedVGG19(num_classes, *args, **kwargs):
     net = vgg19_orig(pretrained=False, num_classes=num_classes)
     net.name = 'VGG19'
     return net
@@ -264,6 +352,7 @@ def resnet152(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+    model.name = 'ResNet152'
     return model
 
 
@@ -654,7 +743,7 @@ def vggO2(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=True, thresh=.999, centering=True, downsampling=None):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=PCA, thresh=.999, centering=True, downsampling=None):
     layers = []
     for v in cfg:
         if v == 'M':
@@ -927,7 +1016,7 @@ class VGG(nn.Module):
 
     def __init__(self, features, num_classes=10, init_weights=True,
                  final_filter: int = 512, linear_layer=None, pretrained=False,
-                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=True, thresh=.99, centering=False,
+                 input_size=(32,32), pool_size=1, regress=False, add_pca_layers=PCA, thresh=.99, centering=False,
                  dense_classifier: bool = False):
         super(VGG, self).__init__()
         self.dense_classifier = dense_classifier

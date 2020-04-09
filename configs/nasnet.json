@@ -1,5 +1,5 @@
 {
-  "models" : ["resnet18", "resnet34", "resnet50", "resnet101"],
+  "models" : ["mnasnet05", "mnasnet075", "mnasnet10", "mnasnet13"],
   "dataset": ["Cifar10"],
   "epochs":   30,
   "batch_sizes": [128],

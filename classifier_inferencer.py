@@ -11,6 +11,7 @@ from pca_layers import change_all_pca_layer_centering
 import pandas as pd
 from thop import profile
 from trainer import Trainer
+from time import time
 
 parser = argparse.ArgumentParser(description='Train a network on a dataset')
 parser.add_argument('-n', '--network', dest='model_name', action='store', default='vgg11')
@@ -73,14 +74,10 @@ if __name__ == '__main__':
                         for model in config_dict['models']:
                         
                             run_num += 1
-                            print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']*len(thresholds))*len(dss))
-                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset, batch_size)
+                            print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']*len(thresholds))*len(dss)*len(downsampling))
+                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset, 500)
                             model = parse_model(model, shape, num_classes)
-                            change_all_pca_layer_thresholds(thresh, model, verbose=True)
-                            if 'centering' in config_dict:
-                                change_all_pca_layer_centering(centering=config_dict['centering'], network=model, verbose=True)
-                            else:
-                                change_all_pca_layer_centering(centering=False, network=model, verbose=True)
+                            change_all_pca_layer_centering(centering=config_dict['centering'], network=model, verbose=False, downsampling=dwnsmpl)
                             conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
                             trainer = Trainer(model,
                                               train_loader,
@@ -96,21 +93,27 @@ if __name__ == '__main__':
                                               data_prallel=False if torch.cuda.device_count() > 1 and dataset == 'ImageNet' else False,
                                               saturation_device=args.sat_device,
                                               conv_method=conv_method,
-                                              thresh=thresh)
+                                              thresh=thresh, downsampling=dwnsmpl)
                         #    try:
-                            model.load_state_dict(torch.load(trainer.savepath.replace('.csv', '.pt'))['model_state_dict'])
+                            trainer.stats.stop()
+                            #model.load_state_dict(torch.load(trainer.savepath.replace('.csv', '.pt'))['model_state_dict'])
+                            print('Loading model from', trainer.savepath)
                             #except:
                           #     print('Loading model failed, proceeding')
                        #         continue
                             print('Model loaded')
-                            for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 3.0]):
+                            for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94,
+                                                         0.95, 0.96, 0.97, 0.98, 0.99,
+                                                         0.992, 0.994, 0.996, 0.998, 0.999,
+                                                         3.0]):
+                                start = time()
                             #for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 0.999, 0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
                             #for eval_thresh in reversed([0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
                                 #change_all_pca_layer_thresholds_and_inject_random_directions(eval_thresh, model, verbose=False)
                                 sat, indims, fsdims, lnames = change_all_pca_layer_thresholds(eval_thresh, network=model)
                                 print('Changed model threshold to', eval_thresh)
-                                model = model.to(trainer.device)
-                                trainer.model = model
+                                #model = model.to(trainer.device)
+                                #trainer.model = model
                                 acc, loss = trainer.test(False)
                                 print('InDims:', sum(indims), 'Acc:', acc, 'Loss:', loss, 'for', model.name, 'at threshold:', eval_thresh)
 
@@ -132,6 +135,8 @@ if __name__ == '__main__':
                                 pd.DataFrame.from_dict(
                                     sats_l
                                 ).to_csv(f'{trainer.savepath.replace(".csv", "_if{}.csv".format(eval_thresh))}', sep=';')
+                                end = time()
+                                print('Took:', end - start)
 
                             pd.DataFrame.from_dict({
                                 'dataset': datasets_csv,
@@ -144,3 +149,4 @@ if __name__ == '__main__':
                                 'sat_avg': sat_avg,
                                 'downsampling': downsamplings
                             }).to_csv('downsampling.csv', sep=';')
+
