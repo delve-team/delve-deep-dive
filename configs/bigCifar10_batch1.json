@@ -1,0 +1,20 @@
+{
+  "models" : [
+    "inceptionv3",
+    "squeezenet10",
+    "squeezenet11",
+    "mobilenetV2",
+    "mnasnet05",
+    "mnasnet075",
+    "mnasnet10",
+    "mnasnet13"
+  ],
+  "dataset": ["BigCifar10"],
+  "epochs":   30,
+  "batch_sizes": [16],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}
