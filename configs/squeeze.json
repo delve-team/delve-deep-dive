@@ -2,8 +2,7 @@
   "models" : [
     "squeezenet10",
     "squeezenet11",
-    "mobilenetV2",
-    "inceptionv3"
+    "mobilenetV2"
   ],
   "dataset": ["Cifar10"],
   "epochs":   30,

@@ -55,7 +55,7 @@ def densenet201(num_classes, *args, **kwargs):
 def mobilenetV2(num_classes, *args, **kwargs):
     model = torchvision.models.mobilenet_v2(pretrained=False, num_classes=num_classes)
     model.name = 'MobileNetV2'
-
+    return model
 
 
 def mnasnet05(num_classes, *args, **kwargs):

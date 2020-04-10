@@ -4,8 +4,7 @@ import pandas as pd
 
 
 def order_columns(column_names):
-    column_names = sorted(column_names,
-                          key=lambda x: int(x.split('-')[-1]) + 100 if 'classifier' in x else int(x.split('-')[-1]))
+    column_names = column_names, key=lambda x: int(x.split('-')[-1]) + 100 if 'classifier' in x else int(x.split('-')[-1])
     column_names.remove
     return column_names
 
@@ -35,7 +34,7 @@ def plot_saturation_level(df, acc=-1, savepath='run.png', epoch=0):
     col_names = [i for i in df.columns]
    # ax.grid()
     ax.bar(list(range(len(col_names))), df.values[0])
-    plt.xticks(list(range(len(col_names))), [col_name.replace('train-saturation_', '') for col_name in col_names], rotation=90)
+    plt.xticks(list(range(len(col_names))), [col_name.replace('train-saturation_', '') for col_name in col_names], rotation=90, fontsize=6)
     ax.set_ylim((0,100))
     ax.text(1, 80, 'Accuray: {}'.format(acc))
     plt.yticks(fontsize=16)
