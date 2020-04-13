@@ -112,6 +112,8 @@ def train_model(data_path: str, labels_path: str) -> LogisticRegression:
 
 def obtain_accuracy(model: LogisticRegression, data_path, label_path: str) -> float:
     data, labels = get_data_annd_labels(data_path, label_path)
+    print('Loaded data:', data_path)
+    print('Evaluating with data of shape', data.shape)
     #model = model.cpu()
     #t_data = torch.from_numpy(data)
     #out = model(t_data)
@@ -141,7 +143,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     train_set, eval_set = obtain_all_dataset(args.folder)
     print(len(train_set), len(eval_set))
-    train_set.reverse(), eval_set.reverse()
+    #train_set.reverse(), eval_set.reverse()
     for train_data, eval_data in zip(train_set, eval_set):
         train_acc, eval_acc = train_model_for_data(train_data, eval_data)
         names.append(os.path.basename(train_data[0][:-2]))
@@ -151,6 +153,6 @@ if __name__ == '__main__':
             {
                 'name': names,
                 'train_acc': t_accs,
-                'eval_acc': eval_acc
+                'eval_acc': e_accs
             }
         ).to_csv('results_vgg16.csv', sep=';')
