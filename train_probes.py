@@ -62,7 +62,7 @@ def filter_files_by_string_key(files: List[str], key: str) -> List[str]:
 
 
 def seperate_labels_from_data(files: List[str]) -> Tuple[List[str], List[str]]:
-    data_files = sorted([file for file in files if '-labels' not in file]).reverse()
+    data_files = [file for file in files if '-labels' not in file]
     label_file = [file for file in files if '-labels' in file]
     return data_files, label_file
 
@@ -141,6 +141,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     train_set, eval_set = obtain_all_dataset(args.folder)
     print(len(train_set), len(eval_set))
+    train_set.reverse(), eval_set.reverse()
     for train_data, eval_data in zip(train_set, eval_set):
         train_acc, eval_acc = train_model_for_data(train_data, eval_data)
         names.append(os.path.basename(train_data[0][:-2]))
