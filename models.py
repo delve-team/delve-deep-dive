@@ -8,6 +8,7 @@ from pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
 
 PCA = False
+PRETRAINED = True
 
 def Inception3(input_size=(32,32), num_classes=10):
     model = torchvision.models.inception.Inception3(num_classes=num_classes)
@@ -21,66 +22,66 @@ import torch.utils.model_zoo as model_zoo
 ######################## POST ICML MODEL #########################
 
 def squeezenet10(num_classes, *args, **kwargs):
-    model = torchvision.models.squeezenet1_0(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.squeezenet1_0(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'Squeezenet10'
     return model
 
 def squeezenet11(num_classes, *args, **kwargs):
-    model = torchvision.models.squeezenet1_1(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.squeezenet1_1(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'Squeezenet11'
     return model
 
 
 def densenet121(num_classes, *args, **kwargs):
-    model = torchvision.models.densenet121(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.densenet121(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'DenseNet121'
     return model
 
 def densenet169(num_classes, *args, **kwargs):
-    model = torchvision.models.densenet169(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.densenet169(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'DenseNet169'
     return model
 
 def densenet161(num_classes, *args, **kwargs):
-    model = torchvision.models.densenet161(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.densenet161(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'DenseNet161'
     return model
 
 def densenet201(num_classes, *args, **kwargs):
-    model = torchvision.models.densenet201(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.densenet201(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'DenseNet201'
     return model
 
 
 def mobilenetV2(num_classes, *args, **kwargs):
-    model = torchvision.models.mobilenet_v2(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.mobilenet_v2(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'MobileNetV2'
     return model
 
 
 def mnasnet05(num_classes, *args, **kwargs):
-    model = torchvision.models.mnasnet0_5(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.mnasnet0_5(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'MNasNet05'
     return model
 
 def mnasnet075(num_classes, *args, **kwargs):
-    model = torchvision.models.mnasnet0_75(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.mnasnet0_75(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'MNasNet075'
     return model
 
 def mnasnet10(num_classes, *args, **kwargs):
-    model = torchvision.models.mnasnet1_0(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.mnasnet1_0(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'MNasNet10'
     return model
 
 def mnasnet13(num_classes, *args, **kwargs):
-    model = torchvision.models.mnasnet1_3(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.mnasnet1_3(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'MNasNet13'
     return model
 
 
 def inceptionv3(num_classes, *args, **kwargs):
-    model = torchvision.models.inception_v3(pretrained=False, num_classes=num_classes)
+    model = torchvision.models.inception_v3(pretrained=PRETRAINED, num_classes=num_classes)
     model.name = 'IncetionV3'
     return model
 
@@ -113,13 +114,13 @@ def pretrainedResNet34(num_classes, *args, **kwargs):
 
 
 def pretrainedVGG16(num_classes, *args, **kwargs):
-    net = vgg16_orig(pretrained=False, num_classes=num_classes)
+    net = vgg16_orig(pretrained=PRETRAINED, num_classes=num_classes)
     net.name = 'VGG16'
     return net
 
 
 def pretrainedVGG19(num_classes, *args, **kwargs):
-    net = vgg19_orig(pretrained=False, num_classes=num_classes)
+    net = vgg19_orig(pretrained=PRETRAINED, num_classes=num_classes)
     net.name = 'VGG19'
     return net
 

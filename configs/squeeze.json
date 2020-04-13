@@ -1,6 +1,5 @@
 {
   "models" : [
-    "inceptionv3",
     "squeezenet10",
     "squeezenet11",
     "mobilenetV2"

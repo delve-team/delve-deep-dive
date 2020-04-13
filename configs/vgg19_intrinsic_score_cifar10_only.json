@@ -1,0 +1,11 @@
+{
+  "models" : ["vgg16"],
+  "dataset": ["Cifar10"],
+  "epochs":   50,
+  "batch_sizes": [32],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

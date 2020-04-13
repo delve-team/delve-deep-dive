@@ -1,5 +1,15 @@
 {
-  "models" : ["pretrainedVGG16", "pretrainedVGG19", "pretrainedResNet34"],
+  "models" : [
+    "squeezenet10",
+    "squeezenet11",
+    "mobilenetV2",
+    "mnasnet05",
+    "mnasnet10",
+    "densenet121",
+    "densenet161",
+    "densenet169",
+    "densenet201"
+  ],
   "dataset": ["ImageNet"],
   "epochs":   1,
   "batch_sizes": [32],
