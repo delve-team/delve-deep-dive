@@ -13,8 +13,9 @@ import pandas as pd
 
 class LatentRepresentationCollector:
 
-    def __init__(self, model: Module, savepath: str, save_instantly: bool = True):
+    def __init__(self, model: Module, savepath: str, save_instantly: bool = True, downsampling: int = None):
         self.savepath = savepath
+        self.downsampling = downsampling
         if exists(savepath):
             print('Found previous extraction in folder, removing it...')
             rmtree(savepath)
@@ -36,6 +37,8 @@ class LatentRepresentationCollector:
 
     def _record_stat(self, activations_batch: torch.Tensor, layer: Module, training_state: str):
         if activations_batch.dim() == 4:  # conv layer (B x C x H x W)
+            if self.downsampling is not None:
+                activations_batch = torch.nn.functional.interpolate(activations_batch, self.downsampling)
             activations_batch = activations_batch.view(activations_batch.size(0), -1)
         batch = activations_batch.cpu().numpy()
         if not self.save_instantly:

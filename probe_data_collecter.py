@@ -67,7 +67,7 @@ if __name__ == '__main__':
                         
                             run_num += 1
                             print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']*len(thresholds))*len(dss)*len(downsampling))
-                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset, 500)
+                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset, 5)
                             model = parse_model(model, shape, num_classes)
                             change_all_pca_layer_centering(centering=config_dict['centering'], network=model, verbose=False, downsampling=dwnsmpl)
                             conv_method = 'channelwise' if 'conv_method' not in config_dict else config_dict['conv_method']
@@ -87,10 +87,10 @@ if __name__ == '__main__':
                                               conv_method=conv_method,
                                               thresh=thresh, downsampling=dwnsmpl)
                             trainer.stats.stop()
-                            weight_path = r'C:\Users\Mats Richter\Documents\delve-deep-dive\logs\VGG16\Cifar10\VGG16_bs16_e50_dspl32_t10000_idPreTrained.pt'
+                            weight_path = trainer.savepath.replace('.csv', '.pt')
                             model.load_state_dict(torch.load(weight_path)['model_state_dict'])
                             print('Initializing logger')
-                            logger = LatentRepresentationCollector(model, savepath='./latent_datasets/vgg16')
+                            logger = LatentRepresentationCollector(model, savepath='./latent_datasets/{}_{}'.format(model.name, dataset), downsampling=4)
                             print('Extracting training')
                             extract_from_dataset(logger, True, model, train_loader, args.device)
                             print('Extracting test')

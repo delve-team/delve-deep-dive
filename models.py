@@ -8,7 +8,7 @@ from pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
 
 PCA = False
-PRETRAINED = True
+PRETRAINED = False
 
 def Inception3(input_size=(32,32), num_classes=10):
     model = torchvision.models.inception.Inception3(num_classes=num_classes)

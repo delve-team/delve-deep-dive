@@ -155,4 +155,4 @@ if __name__ == '__main__':
                 'train_acc': t_accs,
                 'eval_acc': e_accs
             }
-        ).to_csv('results_vgg16.csv', sep=';')
+        ).to_csv('results_{}.csv'.format(os.path.basename(args.folder)), sep=';')
