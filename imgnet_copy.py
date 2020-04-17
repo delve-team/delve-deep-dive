@@ -16,6 +16,7 @@ if exists(TGT_ROOT_TEST):
 mkdir(TGT_ROOT_VAL)
 mkdir(TGT_ROOT_TEST)
 
+
 def get_class_mapping(txt_path):
     mapping = {}
     with open(txt_path, 'r') as fp:
@@ -28,6 +29,7 @@ def get_class_mapping(txt_path):
             else:
                 mapping[splitted[1]] = [splitted[0]]
     return mapping
+
 
 def copy_by_class_mapping(mapping: dict, tgt_path, src_path):
     c = 0

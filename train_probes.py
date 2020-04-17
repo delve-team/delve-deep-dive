@@ -10,6 +10,7 @@ import pickle
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from torch.autograd import Variable
+from multiprocessing import Pool
 
 
 class LogisticRegression(torch.nn.Module):
@@ -106,7 +107,7 @@ def train_model(data_path: str, labels_path: str) -> LogisticRegression:
     #data_loader = dataset_from_array(data, labels)
     print('Training data obtained with shape', data.shape)
     #model = LogisticRegression(input_dim=data.shape[-1], output_dim=len(np.unique(labels)))
-    model = LogisticRegressionModel(multi_class='multinomial', n_jobs=6, solver='saga', verbose=1).fit(data, labels)#train(model, data_loader)
+    model = LogisticRegressionModel(multi_class='multinomial', n_jobs=6, solver='saga', verbose=0).fit(data, labels)#train(model, data_loader)
     return model
 
 
@@ -125,6 +126,8 @@ def obtain_accuracy(model: LogisticRegression, data_path, label_path: str) -> fl
 
 
 def train_model_for_data(train_set: Tuple[str, str], eval_set: Tuple[str, str]):
+    fp = open(os.path.basename(train_set[0])+'.txt', 'w+')
+    fp.write('Training startet\n')
     print('Training model')
     model = train_model(*train_set)
     print('Obtaining metrics')
@@ -133,22 +136,48 @@ def train_model_for_data(train_set: Tuple[str, str], eval_set: Tuple[str, str]):
     print(os.path.basename(train_set[0]))
     print('Train acc', train_acc)
     print('Eval acc:', eval_acc)
+    fp.write('Training concluded\n')
+    fp.close()
     return train_acc, eval_acc
+
+def train_model_for_data_mp(args):
+    train_model_for_data(*args)
+
 
 import pandas as pd
 if __name__ == '__main__':
     names, t_accs, e_accs = [], [], []
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', dest='folder', type=str, default=None, help='data folder')
+    parser.add_argument('-mp', dest='mp', type=int, default=0, help='Enable multiprocessing')
     args = parser.parse_args()
     train_set, eval_set = obtain_all_dataset(args.folder)
     print(len(train_set), len(eval_set))
     #train_set.reverse(), eval_set.reverse()
+    fargs = []
     for train_data, eval_data in zip(train_set, eval_set):
-        train_acc, eval_acc = train_model_for_data(train_data, eval_data)
-        names.append(os.path.basename(train_data[0][:-2]))
-        t_accs.append(train_acc)
-        e_accs.append(eval_acc)
+        if args.mp == 0:
+            print('Multiprocessing is disabled starting training...')
+            train_acc, eval_acc = train_model_for_data(train_data, eval_data)
+            names.append(os.path.basename(train_data[0][:-2]))
+            t_accs.append(train_acc)
+            e_accs.append(eval_acc)
+            pd.DataFrame.from_dict(
+                {
+                    'name': names,
+                    'train_acc': t_accs,
+                    'eval_acc': e_accs
+                }
+            ).to_csv('results_{}.csv'.format(os.path.basename(args.folder)), sep=';')
+        else:
+            fargs.append((train_data, eval_data))
+    if args.mp != 0:
+        with Pool(args.mp) as p:
+            results = p.map(train_model_for_data_mp, fargs)
+        for i, result in enumerate(results):
+            t_accs.append(result[0])
+            e_accs.append(result[1])
+            names.append(os.path.basename(result[0][0][:-2]))
         pd.DataFrame.from_dict(
             {
                 'name': names,
@@ -156,3 +185,4 @@ if __name__ == '__main__':
                 'eval_acc': e_accs
             }
         ).to_csv('results_{}.csv'.format(os.path.basename(args.folder)), sep=';')
+

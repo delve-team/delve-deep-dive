@@ -144,11 +144,11 @@ class BasicBlock(nn.Module):
         self.thresh = thresh
         self.centering = centering
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.convpca1 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
+        #self.convpca1 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.convpca2 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
+        #self.convpca2 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -157,12 +157,12 @@ class BasicBlock(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.convpca1(out)
+        #out = self.convpca1(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.convpca2(out)
+        #out = self.convpca2(out)
         out = self.bn2(out)
 
         if self.downsample is not None:
@@ -180,13 +180,13 @@ class Bottleneck(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None, threshold=.999, centering=False):
         super(Bottleneck, self).__init__()
         self.conv1 = conv1x1(inplanes, planes)
-        self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
+        #self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes, stride)
-        self.conv2PCA = Conv2DPCALayer(planes, threshold, centering)
+        #self.conv2PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = conv1x1(planes, planes * self.expansion)
-        self.conv3PCA = Conv2DPCALayer(planes, threshold, centering)
+        #self.conv3PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn3 = nn.BatchNorm2d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -227,7 +227,7 @@ class ResNet(nn.Module):
         self.centering = centering
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
+        #self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -273,7 +273,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.conv1pca(x)
+        #x = self.conv1pca(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
