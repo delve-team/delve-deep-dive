@@ -77,7 +77,7 @@ class Trainer:
             self.optimizer = optim.Adam(model.parameters(), lr=0.01)
         elif optimizer == "SGD":
             print('Using SGD')
-            self.optimizer = optim.SGD(model.parameters(), lr=0.0, momentum=0.9)
+            self.optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
         elif optimizer == "LRS":
             print('Using LRS')
             self.optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
