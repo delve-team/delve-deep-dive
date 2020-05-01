@@ -399,12 +399,38 @@ def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: 
     train_loader.name = "TinyImageNet"
     return train_loader, test_loader, (64, 64), 200
 
+def BigTinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: bool = False, test_shuffle=False):
+    # Transformations
+    # Transformations
+    RC = transforms.RandomCrop((64, 64), padding=8)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(224)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, NRM])
+
+    trainset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/train/', transform=transform_with_aug)
+    testset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/val/ds', transform=transform_no_aug)
+
+
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=3, pin_memory=False)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=test_shuffle, num_workers=3, pin_memory=False)
+    train_loader.name = "BigTinyImageNet"
+    return train_loader, test_loader, (64, 64), 200
 
 def g2rgb(x):
     return x.repeat(3, 1, 1)
 
 
-def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
+def BigMNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     # Transformations
     RC = transforms.RandomCrop((28, 28), padding=3)
     RHF = transforms.RandomHorizontalFlip()
@@ -416,9 +442,36 @@ def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     RGB = transforms.Lambda(g2rgb)
 
     # Transforms object for trainset with augmentation
-    transform_with_aug = transforms.Compose([RC, RHF, TT, RGB, NRM])
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, RGB, NRM])
     # Transforms object for testset with NO augmentation
-    transform_no_aug = transforms.Compose([TT, RGB, NRM])
+    transform_no_aug = transforms.Compose([RS, TT, RGB, NRM])
+
+    trainset = torchvision.datasets.MNIST(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=3, pin_memory=False)
+    testset = torchvision.datasets.MNIST(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=3, pin_memory=False)
+    train_loader.name = "BigMNIST"
+    return train_loader, test_loader, (28, 28), 10
+
+def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
+    # Transformations
+    RC = transforms.RandomCrop((28, 28), padding=3)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(32)
+    RGB = transforms.Lambda(g2rgb)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, RGB, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, RGB, NRM])
 
 
     trainset = torchvision.datasets.MNIST(root=cache_dir, train=True,

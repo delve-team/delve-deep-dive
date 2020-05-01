@@ -1,0 +1,10 @@
+{
+  "models" : ["resnet18", "resnet34", "resnet18noskip", "resnet34noskip"],
+  "dataset": ["ImageNet"],
+  "epochs":   100,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [13.0],
+  "centering": true
+}

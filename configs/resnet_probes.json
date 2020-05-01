@@ -1,0 +1,10 @@
+{
+  "models" : ["vgg16AlteredPooling1", "resnet18", "resnet34", "resnet18noskip", "resnet34noskip"],
+  "dataset": ["Cifar10", "BigCifar10"],
+  "epochs":   30,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [13.0],
+  "centering": true
+}

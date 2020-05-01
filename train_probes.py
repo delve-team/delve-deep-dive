@@ -141,7 +141,7 @@ def train_model_for_data(train_set: Tuple[str, str], eval_set: Tuple[str, str]):
     return train_acc, eval_acc
 
 def train_model_for_data_mp(args):
-    train_model_for_data(*args)
+    return train_model_for_data(*args)
 
 
 import pandas as pd
@@ -156,10 +156,10 @@ if __name__ == '__main__':
     #train_set.reverse(), eval_set.reverse()
     fargs = []
     for train_data, eval_data in zip(train_set, eval_set):
+        names.append(os.path.basename(train_data[0][:-2]))
         if args.mp == 0:
             print('Multiprocessing is disabled starting training...')
             train_acc, eval_acc = train_model_for_data(train_data, eval_data)
-            names.append(os.path.basename(train_data[0][:-2]))
             t_accs.append(train_acc)
             e_accs.append(eval_acc)
             pd.DataFrame.from_dict(
@@ -171,13 +171,13 @@ if __name__ == '__main__':
             ).to_csv('results_{}.csv'.format(os.path.basename(args.folder)), sep=';')
         else:
             fargs.append((train_data, eval_data))
+
     if args.mp != 0:
         with Pool(args.mp) as p:
             results = p.map(train_model_for_data_mp, fargs)
         for i, result in enumerate(results):
             t_accs.append(result[0])
             e_accs.append(result[1])
-            names.append(os.path.basename(result[0][0][:-2]))
         pd.DataFrame.from_dict(
             {
                 'name': names,

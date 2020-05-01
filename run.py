@@ -8,6 +8,7 @@ import types
 from pca_layers import change_all_pca_layer_thresholds
 from pca_layers import change_all_pca_layer_centering
 from thop import profile
+from time import time
 
 from trainer import Trainer
 
@@ -82,7 +83,7 @@ if __name__ == '__main__':
                                               optimizer=optimizer,
                                               plot=True,
                                               compute_top_k=True if dataset == 'ImageNet' else False,
-                                              data_prallel=False if torch.cuda.device_count() > 1 and dataset == 'ImageNet' else False,
+                                              #data_prallel=False if torch.cuda.device_count() > 1 and dataset == 'ImageNet' else False,
                                               saturation_device=args.sat_device,
                                               conv_method=conv_method,
                                               thresh=thresh,

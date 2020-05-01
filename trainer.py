@@ -72,9 +72,12 @@ class Trainer:
         if optimizer == "adam":
             print('Using adam')
             self.optimizer = optim.Adam(model.parameters())
-        elif optimizer == 'bad_lr_adam':
-            print('Using adam with to large learning rate')
+        elif optimizer == "adam_lr":
+            print("Using adam with higher learning rate")
             self.optimizer = optim.Adam(model.parameters(), lr=0.01)
+        elif optimizer == 'adam_lr2':
+            print('Using adam with to large learning rate')
+            self.optimizer = optim.Adam(model.parameters(), lr=0.0001)
         elif optimizer == "SGD":
             print('Using SGD')
             self.optimizer = optim.SGD(model.parameters(), lr=0.0, momentum=0.9)
@@ -104,8 +107,7 @@ class Trainer:
             self.model.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['model_state_dict'])
             if data_prallel:
                 self.model = nn.DataParallel(self.model)
-            else:
-                self.model = self.model.to(self.device)
+            self.model = self.model.to(self.device)
             if half_precision:
                 self.model = self.model.half()
             self.optimizer.load_state_dict(torch.load(self.savepath.replace('.csv', '.pt'))['optimizer'])
@@ -120,8 +122,7 @@ class Trainer:
             self.parallel = data_prallel
             if data_prallel:
                 self.model = nn.DataParallel(self.model)
-            else:
-                self.model = self.model.to(self.device)
+            self.model = self.model.to(self.device)
         writer = CSVandPlottingWriter(self.savepath.replace('.csv', ''), fontsize=16, primary_metric='test_accuracy')
         writer2 = NPYWriter(self.savepath.replace('.csv', ''))
         self.pooling_strat = conv_method
@@ -136,7 +137,7 @@ class Trainer:
                                    conv_method=conv_method, log_interval=1,
                                    device=self.saturation_device, reset_covariance=True,
                                    max_samples=None, initial_epoch=initial_epoch, interpolation_strategy='nearest' if downsampling is not None else None,
-                                   interpolation_downsampling=downsampling)
+                                   interpolation_downsampling=4)
 
 
     def _infer_initial_epoch(self, savepath):

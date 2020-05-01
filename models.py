@@ -139,8 +139,9 @@ def conv1x1(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, thresh=.99, centering=False):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, thresh=.99, centering=False, noskip=False):
         super(BasicBlock, self).__init__()
+        self.noskip = noskip
         self.thresh = thresh
         self.centering = centering
         self.conv1 = conv3x3(inplanes, planes, stride)
@@ -168,7 +169,8 @@ class BasicBlock(nn.Module):
         if self.downsample is not None:
             identity = self.downsample(x)
 
-        out += identity
+        if not self.noskip:
+            out += identity
         out = self.relu(out)
 
         return out
@@ -177,8 +179,9 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, threshold=.999, centering=False):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, threshold=.999, centering=False, noskip=False):
         super(Bottleneck, self).__init__()
+        self.noskip = noskip
         self.conv1 = conv1x1(inplanes, planes)
         #self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -211,8 +214,8 @@ class Bottleneck(nn.Module):
 
         if self.downsample is not None:
             identity = self.downsample(x)
-
-        out += identity
+        if not self.noskip:
+            out += identity
         out = self.relu(out)
 
         return out
@@ -220,8 +223,9 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False,  **kwargs):
+    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False, noskip=False,  **kwargs):
         super(ResNet, self).__init__()
+        self.noskip = noskip
         self.inplanes = 64
         self.thresh = thresh
         self.centering = centering
@@ -264,10 +268,10 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, threshold, centering))
+        layers.append(block(self.inplanes, planes, stride, downsample if not self.noskip else None, threshold, centering, noskip=self.noskip))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
+            layers.append(block(self.inplanes, planes, noskip=self.noskip))
 
         return nn.Sequential(*layers)
 
@@ -288,6 +292,33 @@ class ResNet(nn.Module):
         x = self.fc(x)
 
         return x
+
+
+def resnet18noskip(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [2, 2, 2, 2], noskip=True, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18NoSkip'
+    return model
+
+
+def resnet34noskip(pretrained=False, **kwargs):
+    """Constructs a ResNet-34 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [3, 4, 6, 3], noskip=True, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+    model.name = 'ResNet34NoSkip'
+
+    return model
 
 
 def resnet18(pretrained=False, **kwargs):
@@ -447,6 +478,13 @@ cfg = {
     'DXS': [16, 16, 'M', 32, 32, 'M', 64, 64, 64, 'M', 128, 128, 128, 'M', 128, 128, 128, 'M'],
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
 
+    'D_AP1': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 512, 512, 512, 'M'],
+    'D_AP2': [64, 64, 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'D_AP3': [64, 64, 128, 128, 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'D_AP4': [64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'D_AP5': [64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512, 'M'],
+    'D_AP6': [64, 64, 128, 128, 'M', 256, 256, 256, 512, 512, 512, 'M', 512, 512, 512, 'M'],
+
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'E2': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 'M'],
     'E3': [128, 128, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M'],
@@ -484,6 +522,61 @@ cfg = {
     'EXXS': [8, 8, 'M', 16, 16, 'M', 32, 32, 32, 32, 'M', 64, 64, 64, 64, 'M', 64, 64, 64, 64, 'M'],
     'EXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 16, 16, 'M', 32, 32, 32, 32, 'M', 32, 32, 32, 32, 'M'],
 }
+
+def vgg16AlteredPooling1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP1']), **kwargs)
+    model.name = "AlteredPooling1_VGG16"
+    return model
+
+
+def vgg16AlteredPooling2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP2']), **kwargs)
+    model.name = "AlteredPooling2_VGG16"
+    return model
+
+def vgg16AlteredPooling3(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP3']), **kwargs)
+    model.name = "AlteredPooling3_VGG16"
+    return model
+
+def vgg16AlteredPooling4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP4']), **kwargs)
+    model.name = "AlteredPooling4_VGG16"
+    return model
+
+def vgg16AlteredPooling5(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP5']), **kwargs)
+    model.name = "AlteredPooling5_VGG16"
+    return model
+
+def vgg16AlteredPooling6(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D_AP6']), **kwargs)
+    model.name = "AlteredPooling6_VGG16"
+    return model
 
 
 

@@ -16,6 +16,7 @@
       <excludeFolder url="file://$MODULE_DIR$/TinyImageNetSamples" />
       <excludeFolder url="file://$MODULE_DIR$/UncenteredDenseFood101Samples" />
       <excludeFolder url="file://$MODULE_DIR$/configs" />
+      <excludeFolder url="file://$MODULE_DIR$/latent_datasets" />
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />

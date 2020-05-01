@@ -1,0 +1,18 @@
+{
+  "models" : [
+    "vgg16",
+    "vgg16AlteredPooling1",
+    "vgg16AlteredPooling2",
+    "vgg16AlteredPooling3",
+    "vgg16AlteredPooling4",
+    "vgg16AlteredPooling5",
+    "vgg16AlteredPooling6"
+  ],
+  "dataset": ["Cifar10", "MNIST", "TinyImageNet", "BigCifar10"],
+  "epochs":   30,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [13.0],
+  "centering": true
+}
