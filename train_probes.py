@@ -144,16 +144,11 @@ def train_model_for_data_mp(args):
     return train_model_for_data(*args)
 
 
-import pandas as pd
-if __name__ == '__main__':
+def main(args):
     names, t_accs, e_accs = [], [], []
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-f', dest='folder', type=str, default=None, help='data folder')
-    parser.add_argument('-mp', dest='mp', type=int, default=0, help='Enable multiprocessing')
-    args = parser.parse_args()
     train_set, eval_set = obtain_all_dataset(args.folder)
     print(len(train_set), len(eval_set))
-    #train_set.reverse(), eval_set.reverse()
+    # train_set.reverse(), eval_set.reverse()
     fargs = []
     for train_data, eval_data in zip(train_set, eval_set):
         names.append(os.path.basename(train_data[0][:-2]))
@@ -185,4 +180,43 @@ if __name__ == '__main__':
                 'eval_acc': e_accs
             }
         ).to_csv('results_{}.csv'.format(os.path.basename(args.folder)), sep=';')
+
+
+def parse_model(model_name, shape, num_classes):
+    try:
+        import models
+        model = models.__dict__[model_name](input_size=shape, num_classes=num_classes)
+    except KeyError:
+        raise NameError("%s doesn't exist." % model_name)
+    return model.name
+
+
+import pandas as pd
+import itertools
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', dest='folder', type=str, default=None, help='data folder')
+    parser.add_argument('-mp', dest='mp', type=int, default=0, help='Enable multiprocessing')
+    parser.add_argument('--config', dest='config', type=str, default=None, help='Path to a config file')
+    args = parser.parse_args()
+    if args.config is not None:
+        import json
+        config = json.load(open(args.config, 'r'))
+        for (model, dataset) in itertools.product(config['models'], config['dataset']):
+            model_name = parse_model(model, (32, 32, 3), 10)
+
+            class PseudoArgs:
+                def __init__(self):
+                    self.model_name = model_name
+                    self.folder = os.path.join(args.folder, f'{model_name}_{dataset}')
+                    self.mp = args.mp
+
+                def __str__(self):
+                    return f"PseudoArgs(model_name={model_name}, folder={self.folder}, mp={self.mp})"
+
+            print(str(PseudoArgs()))
+            main(PseudoArgs())
+    else:
+        main(args)
 

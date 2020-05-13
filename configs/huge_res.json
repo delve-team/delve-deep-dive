@@ -1,0 +1,10 @@
+{
+  "models" : ["resnet18"],
+  "dataset": ["HugeCifar10", "GiantCifar10"],
+  "epochs":   30,
+  "batch_sizes": [16],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [13.0],
+  "centering": true
+}

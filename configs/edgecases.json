@@ -1,0 +1,14 @@
+{
+  "models" : [
+    "vgg16_XXS", "vgg11", "vgg11_XXS", "vgg16",
+    "resnet18","resnet18_S", "resnet18_XS", "resnet18_XXS",
+    "resnet34","resnet34_S", "resnet34_XS", "resnet34_XXS"],
+  "dataset": ["Cifar10", "MediumCifar10", "SmallCifar10", "BigCifar10"],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

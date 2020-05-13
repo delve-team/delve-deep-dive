@@ -38,7 +38,7 @@ class LatentRepresentationCollector:
     def _record_stat(self, activations_batch: torch.Tensor, layer: Module, training_state: str):
         if activations_batch.dim() == 4:  # conv layer (B x C x H x W)
             if self.downsampling is not None:
-                activations_batch = torch.nn.functional.interpolate(activations_batch, self.downsampling, mode='bilinear')
+                activations_batch = torch.nn.functional.interpolate(activations_batch, self.downsampling)
             activations_batch = activations_batch.view(activations_batch.size(0), -1)
         batch = activations_batch.cpu().numpy()
         if not self.save_instantly:

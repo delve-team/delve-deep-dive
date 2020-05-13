@@ -370,6 +370,66 @@ def CatVsDog(batch_size=12, output_size=(32, 32), cache_dir='tmp'):
 
     return train_loader, test_loader, (32,32), 2
 
+def SmallTinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: bool = False, test_shuffle=False):
+    # Transformations
+    # Transformations
+    RC = transforms.RandomCrop((64, 64), padding=8)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(32)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, NRM]) if not no_norm else transforms.Compose([RC, RHF, TT])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, NRM]) if not no_norm else transforms.Compose([TT])
+
+
+    trainset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/train/', transform=transform_with_aug)
+    testset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/val/ds', transform=transform_no_aug)
+
+
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=3, pin_memory=False)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=test_shuffle, num_workers=3, pin_memory=False)
+    train_loader.name = "SmallTinyImageNet"
+    return train_loader, test_loader, (64, 64), 200
+
+
+
+def SmallResizedTinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: bool = False, test_shuffle=False):
+    # Transformations
+    # Transformations
+    RC = transforms.RandomCrop((64, 64), padding=8)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(32)
+    RS2 = transforms.Resize(64)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, RS2, TT, NRM]) if not no_norm else transforms.Compose([RC, RHF, TT])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, RS2, TT, NRM]) if not no_norm else transforms.Compose([TT])
+
+
+    trainset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/train/', transform=transform_with_aug)
+    testset = torchvision.datasets.ImageFolder(root='./tmp/tiny-imagenet-200/val/ds', transform=transform_no_aug)
+
+
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=3, pin_memory=False)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=test_shuffle, num_workers=3, pin_memory=False)
+    train_loader.name = "SmallResizedTinyImageNet"
+    return train_loader, test_loader, (64, 64), 200
+
+
 
 def TinyImageNet(batch_size=12, output_size=(64, 64), cache_dir='tmp', no_norm: bool = False, test_shuffle=False):
     # Transformations
@@ -542,6 +602,63 @@ def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
                                              shuffle=False, num_workers=8, pin_memory=True)
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10
+
+
+def GiantCifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
+
+    # Transformations
+    RC = transforms.RandomCrop((32, 32), padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(1024)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, NRM])
+
+
+    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=8, pin_memory=True)
+    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=8, pin_memory=True)
+    train_loader.name = "GiantCifar10"
+    return train_loader, test_loader, (1024, 1024), 10
+
+def HugeCifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
+
+    # Transformations
+    RC = transforms.RandomCrop((32, 32), padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(448)
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RC, RHF, RS, TT, NRM])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, NRM])
+
+
+    trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
+                                            download=True, transform=transform_with_aug)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=8, pin_memory=True)
+    testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
+                                           download=True, transform=transform_no_aug)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=8, pin_memory=True)
+    train_loader.name = "HugeCifar10"
+    return train_loader, test_loader, (448,448), 10
 
 
 def BigCifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):

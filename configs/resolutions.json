@@ -1,0 +1,13 @@
+{
+  "models" : [
+    "resnet18"
+  ],
+  "dataset": ["SmallCifar10", "MediumCifar10", "BigCifar10", "HugeCifar10", "GiantCifar10"],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

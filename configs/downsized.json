@@ -1,0 +1,17 @@
+{
+  "models" : [
+    "resnet18",
+    "resnet34",
+    "vgg16"
+  ],
+  "dataset": [
+    "SmallTinyImageNet",
+    "SmallResizedTinyImageNet"
+  ],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [14.0],
+  "centering": true
+}

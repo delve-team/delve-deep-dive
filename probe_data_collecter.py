@@ -90,7 +90,7 @@ if __name__ == '__main__':
                             weight_path = trainer.savepath.replace('.csv', '.pt')
                             model.load_state_dict(torch.load(weight_path)['model_state_dict'])
                             print('Initializing logger')
-                            logger = LatentRepresentationCollector(model, savepath='./latent_datasets/{}_{}'.format(model.name, dataset), downsampling=1)
+                            logger = LatentRepresentationCollector(model, savepath='./latent_datasets/{}_{}'.format(model.name, dataset), downsampling=4)
                             print('Extracting training')
                             extract_from_dataset(logger, True, model, train_loader, args.device)
                             print('Extracting test')

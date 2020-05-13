@@ -223,24 +223,24 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False, noskip=False,  **kwargs):
+    def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False, noskip=False, scale_factor=1, **kwargs):
         super(ResNet, self).__init__()
         self.noskip = noskip
-        self.inplanes = 64
+        self.inplanes = 64 // scale_factor
         self.thresh = thresh
         self.centering = centering
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(3, 64 // scale_factor, kernel_size=7, stride=2, padding=3,
                                bias=False)
         #self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.bn1 = nn.BatchNorm2d(64 // scale_factor)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0], threshold=thresh, centering=centering)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, threshold=thresh, centering=centering)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, threshold=thresh, centering=centering)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, threshold=thresh, centering=centering)
+        self.layer1 = self._make_layer(block, 64 // scale_factor, layers[0], threshold=thresh, centering=centering)
+        self.layer2 = self._make_layer(block, 128 // scale_factor, layers[1], stride=2, threshold=thresh, centering=centering)
+        self.layer3 = self._make_layer(block, 256 // scale_factor, layers[2], stride=2, threshold=thresh, centering=centering)
+        self.layer4 = self._make_layer(block, 512 // scale_factor, layers[3], stride=2, threshold=thresh, centering=centering)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear((512 // scale_factor) * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -317,6 +317,87 @@ def resnet34noskip(pretrained=False, **kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
     model.name = 'ResNet34NoSkip'
+
+    return model
+
+
+def resnet18_S(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [2, 2, 2, 2], scale_factor=2, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_S'
+    return model
+
+def resnet18_XS(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [2, 2, 2, 2], scale_factor=4, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_XS'
+    return model
+
+
+def resnet18_XXS(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [2, 2, 2, 2], scale_factor=8, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_XXS'
+    return model
+
+
+
+def resnet34_S(pretrained=False, **kwargs):
+    """Constructs a ResNet-34 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [3, 4, 6, 3], scale_factor=2, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+    model.name = 'ResNet34_S'
+
+    return model
+
+
+def resnet34_XS(pretrained=False, **kwargs):
+    """Constructs a ResNet-34 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [3, 4, 6, 3], scale_factor=4, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+    model.name = 'ResNet34_XS'
+
+    return model
+
+
+def resnet34_XXS(pretrained=False, **kwargs):
+    """Constructs a ResNet-34 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [3, 4, 6, 3], scale_factor=8, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+    model.name = 'ResNet34_XXS'
 
     return model
 
