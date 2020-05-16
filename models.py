@@ -7,7 +7,7 @@ from operator import mul
 from pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
 
-PCA = False
+PCA = True
 PRETRAINED = False
 
 def Inception3(input_size=(32,32), num_classes=10):
@@ -145,11 +145,13 @@ class BasicBlock(nn.Module):
         self.thresh = thresh
         self.centering = centering
         self.conv1 = conv3x3(inplanes, planes, stride)
-        #self.convpca1 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
+        if PCA:
+            self.convpca1 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        #self.convpca2 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
+        if PCA:
+            self.convpca2 = Conv2DPCALayer(planes, threshold=thresh, centering=centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -158,12 +160,14 @@ class BasicBlock(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        #out = self.convpca1(out)
+        if PCA:
+            out = self.convpca1(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        #out = self.convpca2(out)
+        if PCA:
+            out = self.convpca2(out)
         out = self.bn2(out)
 
         if self.downsample is not None:
@@ -183,13 +187,16 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.noskip = noskip
         self.conv1 = conv1x1(inplanes, planes)
-        #self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
+        if PCA:
+            self.conv1PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = conv3x3(planes, planes, stride)
-        #self.conv2PCA = Conv2DPCALayer(planes, threshold, centering)
+        if PCA:
+            self.conv2PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = conv1x1(planes, planes * self.expansion)
-        #self.conv3PCA = Conv2DPCALayer(planes, threshold, centering)
+        if PCA:
+            self.conv3PCA = Conv2DPCALayer(planes, threshold, centering)
         self.bn3 = nn.BatchNorm2d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -199,17 +206,20 @@ class Bottleneck(nn.Module):
         identity = x
 
         out = self.conv1(x)
-       # out = self.conv1PCA(out)
+        if PCA:
+            out = self.conv1PCA(out)
         out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        #out = self.conv2PCA(out)
+        if PCA:
+            out = self.conv2PCA(out)
         out = self.bn2(out)
         out = self.relu(out)
 
         out = self.conv3(out)
-       # out = self.conv3PCA(out)
+        if PCA:
+            out = self.conv3PCA(out)
         out = self.bn3(out)
 
         if self.downsample is not None:
@@ -231,7 +241,8 @@ class ResNet(nn.Module):
         self.centering = centering
         self.conv1 = nn.Conv2d(3, 64 // scale_factor, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        #self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
+        if PCA:
+            self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
         self.bn1 = nn.BatchNorm2d(64 // scale_factor)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -277,7 +288,8 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        #x = self.conv1pca(x)
+        if PCA:
+            x = self.conv1pca(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
