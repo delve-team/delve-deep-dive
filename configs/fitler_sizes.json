@@ -1,0 +1,14 @@
+{
+  "models" : [
+    "resnet18_S", "resnet18_XS",
+    "resnet34_S", "resnet34_XS"],
+
+  "dataset": ["BigCifar10"],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

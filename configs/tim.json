@@ -1,0 +1,27 @@
+{
+  "models" : [
+    "vgg11",
+    "vgg11_S",
+    "vgg11_XS",
+    "vgg13",
+    "vgg13_S",
+    "vgg13_XS",
+    "vgg16_S",
+    "vgg16_XS",
+    "vgg19",
+    "vgg19_S",
+    "vgg19_XS",
+    "resnet18_S",
+    "resnet18_XS",
+    "resnet34_S",
+    "resnet34_XS"
+  ],
+  "dataset": ["BigTinyImageNet"],
+  "epochs":   30,
+  "batch_sizes": [32],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}

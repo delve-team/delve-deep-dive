@@ -102,15 +102,16 @@ if __name__ == '__main__':
                           #     print('Loading model failed, proceeding')
                        #         continue
                             print('Model loaded')
-                            for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94,
-                                                         0.95, 0.96, 0.97, 0.98, 0.99,
-                                                         0.992, 0.994, 0.996, 0.998, 0.999,
-                                                         3.0]):
-                                start = time()
-                            #for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 0.999, 0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
+                            #for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94,
+                            #                             0.95, 0.96, 0.97, 0.98, 0.99,
+                            #                             0.992, 0.994, 0.996, 0.998, 0.999,
+                            #                             3.0]):
+
+                            for eval_thresh in reversed([0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.992, 0.994, 0.996, 0.998, 0.999, 0.999, 0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
                             #for eval_thresh in reversed([0.9991, 0.9992, 0.9993, 0.9994, 0.9995, 0.9996, 0.9997, 0.9998, 0.9999, 3.0]):
                                 #change_all_pca_layer_thresholds_and_inject_random_directions(eval_thresh, model, verbose=False)
                                 sat, indims, fsdims, lnames = change_all_pca_layer_thresholds(eval_thresh, network=model)
+                                start = time()
                                 print('Changed model threshold to', eval_thresh)
                                 #model = model.to(trainer.device)
                                 #trainer.model = model
@@ -148,5 +149,5 @@ if __name__ == '__main__':
                                 'featurespace_dimension': fdims,
                                 'sat_avg': sat_avg,
                                 'downsampling': downsamplings
-                            }).to_csv('downsampling.csv', sep=';')
+                            }).to_csv('downsampling2.csv', sep=';')
 
