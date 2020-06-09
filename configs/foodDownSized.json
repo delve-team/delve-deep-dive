@@ -1,0 +1,10 @@
+{
+  "models" : ["resnet18"],
+  "dataset": ["TinyFood101", "TinyResizedFood101", "Food101"],
+  "epochs":   30,
+  "batch_sizes": [32],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

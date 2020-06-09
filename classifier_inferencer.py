@@ -149,5 +149,5 @@ if __name__ == '__main__':
                                 'featurespace_dimension': fdims,
                                 'sat_avg': sat_avg,
                                 'downsampling': downsamplings
-                            }).to_csv('downsampling2.csv', sep=';')
+                            }).to_csv('resner18_result.csv', sep=';')
 

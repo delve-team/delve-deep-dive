@@ -7,7 +7,7 @@ from operator import mul
 from pca_layers import Conv2DPCALayer, LinearPCALayer
 from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
 
-PCA = True
+PCA = False
 PRETRAINED = False
 
 def Inception3(input_size=(32,32), num_classes=10):
@@ -921,6 +921,16 @@ def vggO3(*args, **kwargs):
 
 
 def vggO2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['E2']), **kwargs)
+    model.name = "VGGo2"
+    return model
+
+
+def vggO2b(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet

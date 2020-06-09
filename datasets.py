@@ -292,6 +292,70 @@ class Food101Dataset(Dataset):
         self._load_json_labels(self.training_ids, 'train.json', metadata_folder, True)
         self._load_json_labels(self.test_ids, 'test.json', metadata_folder, False)
 
+
+def TinyFood101(batch_size=12, output_size=(32, 32),
+                        cache_dir='tmp', selected_classes=list(), no_norm: bool = False, shuffle_test: bool = False):
+    # dataset = Food101Dataset(cache_dir)
+    # dataset.init(selected_classes=selected_classes)
+
+    RS = transforms.Resize(output_size)
+    RC = transforms.RandomCrop(output_size, padding=4)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+
+
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RS, RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RS, RHF, TT])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, TT, NRM]) if not no_norm else transforms.Compose([RS, TT])
+
+    train_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/train', transform=transform_with_aug)
+    test_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/test', transform=transform_no_aug)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, pin_memory=True, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, pin_memory=True, shuffle=shuffle_test, num_workers=4)
+    train_loader.name = "TinyFood101"
+    num_classes = len(selected_classes) if selected_classes else 101
+    return train_loader, test_loader, output_size, num_classes
+
+
+
+def TinyResizedFood101(batch_size=12, output_size=(256, 256),
+                        cache_dir='tmp', selected_classes=list(), no_norm: bool = False, shuffle_test: bool = False):
+    # dataset = Food101Dataset(cache_dir)
+    # dataset.init(selected_classes=selected_classes)
+
+    RS = transforms.Resize((32, 32))
+    RS2 = transforms.Resize(output_size)
+    RC = transforms.RandomCrop(output_size, padding=32)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+
+
+
+    # Transforms object for trainset with augmentation
+    transform_with_aug = transforms.Compose([RS, RS2, RC, RHF, TT, NRM]) if not no_norm else transforms.Compose([RS, RHF, TT])
+    # Transforms object for testset with NO augmentation
+    transform_no_aug = transforms.Compose([RS, RS2, TT, NRM]) if not no_norm else transforms.Compose([RS, TT])
+
+    train_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/train', transform=transform_with_aug)
+    test_dataset = torchvision.datasets.ImageFolder(root='./tmp/Food_101_Dataset/food-101/test', transform=transform_no_aug)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, pin_memory=True, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, pin_memory=True, shuffle=shuffle_test, num_workers=4)
+    train_loader.name = "TinyResizedFood101"
+    num_classes = len(selected_classes) if selected_classes else 101
+    return train_loader, test_loader, output_size, num_classes
+
+
+
 def Food101(batch_size=12, output_size=(256, 256),
                         cache_dir='tmp', selected_classes=list(), no_norm: bool = False, shuffle_test: bool = False):
     # dataset = Food101Dataset(cache_dir)
@@ -320,6 +384,7 @@ def Food101(batch_size=12, output_size=(256, 256),
     train_loader.name = "Food101"
     num_classes = len(selected_classes) if selected_classes else 101
     return train_loader, test_loader, output_size, num_classes
+
 
 def CatVsDog(batch_size=12, output_size=(32, 32), cache_dir='tmp'):
     if output_size != (32,32):
