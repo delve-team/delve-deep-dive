@@ -940,13 +940,15 @@ def vggO2b(*args, **kwargs):
     return model
 
 
-def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=PCA, thresh=.999, centering=True, downsampling=None):
+def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=PCA, thresh=.999, centering=True, downsampling=None, dilation=1):
     layers = []
+    effective_kernel_size = k_size + (k_size-1)*(dilation-1)
+    padding = effective_kernel_size - 2
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=k_size-2)
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=padding, dilation=dilation)
             if batch_norm and pca:
                 layers += [conv2d, Conv2DPCALayer(in_filters=v, threshold=thresh, centering=centering, downsampling=True), nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             elif batch_norm:
@@ -1299,6 +1301,32 @@ class VGG(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+def vgg16_d1(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D'], dilation=1), **kwargs)
+    model.name = "VGG16_D1"
+    return model
+
+def vgg16_d2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D'], dilation=2), **kwargs)
+    model.name = "VGG16_D2"
+    return model
+
+def vgg16_d4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D'], dilation=4), **kwargs)
+    model.name = "VGG16_D4"
+    return model
 
 def vgg16(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
@@ -1366,6 +1394,26 @@ def vgg16_7(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['D'], k_size=7), **kwargs)
     model.name = "VGG16_7"
+    return model
+
+
+def vgg16_9(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D'], k_size=9), **kwargs)
+    model.name = "VGG16_9"
+    return model
+
+
+def vgg16_11(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['D'], k_size=9), **kwargs)
+    model.name = "VGG16_11"
     return model
 
 
