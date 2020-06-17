@@ -1,9 +1,0 @@
-delve
-torch
-torchvision
-numpy
-scipy
-matplotlib
-pandas
-scikit-learn
-scipy
