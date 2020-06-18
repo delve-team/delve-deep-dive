@@ -1611,6 +1611,33 @@ def vgg13(*args, **kwargs):
     model.name = "VGG13"
     return model
 
+def vgg13_d2(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B'], dilation=2), **kwargs)
+    model.name = "VGG13_D2"
+    return model
+
+def vgg13_d3(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B'], dilation=3), **kwargs)
+    model.name = "VGG13_D3"
+    return model
+
+def vgg13_d4(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B'], dilation=4), **kwargs)
+    model.name = "VGG13_D4"
+    return model
+
 def vgg13PCA(*args, **kwargs):
     """VGG 16-layer model (configuration "D")
     Args:

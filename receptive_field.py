@@ -215,11 +215,11 @@ class Net(nn.Module):
         y = self.maxpool(y)
         return y
 
-from models import vgg19, vgg16, vgg11, vgg8, resnet18, resnet50, vgg16_d4
+from models import vgg19, vgg16, vgg11, vgg13, vgg8, resnet18, resnet50, vgg13_d4, vgg13_d2, vgg13_d3
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # PyTorch v0.4.0
-model1 = vgg8(num_classes=10, input_size=(1024, 1024)).to(device)
-model2 = vgg16(num_classes=10, input_size=(1024, 1024)).to(device)
-model3 = vgg16_d4(num_classes=10, input_size=(1024, 1024)).to(device)
+model1 = vgg13_d2(num_classes=10, input_size=(1024, 1024)).to(device)
+model2 = vgg13_d3(num_classes=10, input_size=(1024, 1024)).to(device)
+model3 = vgg13_d4(num_classes=10, input_size=(1024, 1024)).to(device)
 receptive_field_dict = receptive_field(model1, (3, 416, 416))
 receptive_field_dict = receptive_field(model2, (3, 416, 416))
 receptive_field_dict = receptive_field(model3, (3, 416, 416))
