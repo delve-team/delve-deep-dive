@@ -38,6 +38,8 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
             if not class_name in ["Conv2d", "BatchNorm2d", 'MaxPool2d', 'AvgPool2d']:
                 return
             receptive_field[m_key] = OrderedDict()
+            #receptive_field[m_key] = class_name
+            receptive_field[m_key]['name'] = class_name
 
             if not receptive_field["0"]["conv_stage"]:
                 print("Enter in deconv_stage")
@@ -121,6 +123,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     receptive_field["0"]["conv_stage"] = True
     receptive_field["0"]["output_shape"] = list(x.size())
     receptive_field["0"]["output_shape"][0] = batch_size
+    receptive_field["0"]["name"] = 'input'
     hooks = []
 
     # register hook
@@ -134,20 +137,23 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
         h.remove()
 
     print("------------------------------------------------------------------------------")
-    line_new = "{:>20}  {:>10} {:>10} {:>10} {:>15} ".format("Layer (type)", "map size", "start", "jump",
+    line_new = "{:>25}  {:>10} {:>10} {:>10} {:>15} ".format("Layer (type)", "map size", "start", "jump",
                                                              "receptive_field")
     print(line_new)
     print("==============================================================================")
     total_params = 0
     total_output = 0
     trainable_params = 0
+    i = 0
     for layer in receptive_field:
+        if receptive_field[layer]['name'] != 'Conv2d':
+            continue
         # input_shape, output_shape, trainable, nb_params
         assert "start" in receptive_field[layer], layer
 #        assert len(receptive_field[layer]["output_shape"]) == 4
-        line_new = "{:7} {:12}  {:>10} {:>10} {:>10} {:>15} ".format(
+        line_new = "{:9} {:15}  {:>10} {:>10} {:>10} {:>15} ".format(
             "",
-            layer,
+            str(layer)+'-'+receptive_field[layer]['name'],
             str(receptive_field[layer]["output_shape"][2:]),
             str(receptive_field[layer]["start"]),
             str(receptive_field[layer]["j"]),
@@ -215,12 +221,12 @@ class Net(nn.Module):
         y = self.maxpool(y)
         return y
 
-from models import vgg19, vgg16, vgg11, vgg13, vgg8, resnet18, resnet50, vgg13_d4, vgg13_d2, vgg13_d3
+from models import vgg19, vgg16, vgg11, vgg13, vgg8, resnet18, resnet50, vgg13_d4, vgg13_d2, vgg13_d3, resnet18noskip
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # PyTorch v0.4.0
-model1 = vgg13_d2(num_classes=10, input_size=(1024, 1024)).to(device)
-model2 = vgg13_d3(num_classes=10, input_size=(1024, 1024)).to(device)
-model3 = vgg13_d4(num_classes=10, input_size=(1024, 1024)).to(device)
-receptive_field_dict = receptive_field(model1, (3, 416, 416))
-receptive_field_dict = receptive_field(model2, (3, 416, 416))
-receptive_field_dict = receptive_field(model3, (3, 416, 416))
+model1 = vgg13(num_classes=10, input_size=(1024, 1024)).to(device)
+model2 = vgg13(num_classes=10, input_size=(1024, 1024)).to(device)
+model3 = vgg13_d2(num_classes=10, input_size=(1024, 1024)).to(device)
+receptive_field_dict = receptive_field(model1, (3, 300, 300))
+receptive_field_dict = receptive_field(model2, (3, 150, 150))
+receptive_field_dict = receptive_field(model3, (3, 150, 150))
 #receptive_field_for_unit(receptive_field_dict, "1", (122, 122))

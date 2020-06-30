@@ -1,0 +1,10 @@
+{
+  "models" : ["vgg13"],
+  "dataset": ["Cifar10_600"],
+  "epochs":   30,
+  "batch_sizes": [8],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}
