@@ -1,7 +1,7 @@
 {
   "models" : ["slayerNN"],
   "dataset": ["Canary"],
-  "epochs":   2,
+  "epochs":   5,
   "batch_sizes": [2],
   "optimizer": "adam",
   "conv_method": "channelwise",

@@ -31,10 +31,12 @@ def parse_model(model_name, shape, num_classes):
     return model
 
 
-def parse_dataset(dataset_name, batch_size):
+def parse_dataset(dataset_name, batch_size, persistent_homology):
     batch_size = int(batch_size)
     try:
-        train_loader, test_loader, shape, num_classes = datasets.__dict__[dataset_name](batch_size=batch_size)
+        train_loader, test_loader, shape, num_classes = \
+                datasets.__dict__[dataset_name] \
+                    (batch_size=batch_size, persistent_homology = persistent_homology)
     except KeyError:
         raise NameError("%s doesn't exist." % dataset_name)
     return train_loader, test_loader, shape, num_classes
@@ -56,6 +58,7 @@ if __name__ == '__main__':
         dss = config_dict['dataset'] if isinstance(config_dict['dataset'], list) else [config_dict['dataset']]
         optimizer = config_dict['optimizer']
         run_num = 0
+        persistent_homology = config_dict.get('persistent_homology', False)
         print(thresholds)
         for dataset in dss:
             for thresh in thresholds:
@@ -64,7 +67,9 @@ if __name__ == '__main__':
                         for dwnsmpl in downsampling:
                             run_num += 1
                             print('Running Experiment', run_num, 'of', len(config_dict['batch_sizes'])*len(config_dict['models']*len(thresholds))*len(dss)*len(downsampling))
-                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset, batch_size)
+                            train_loader, test_loader, shape, num_classes = parse_dataset(dataset,
+                                                                                          batch_size,
+                                                                                          persistent_homology)
                             model = parse_model(model_name, shape, num_classes)
                             change_all_pca_layer_thresholds(thresh, model, verbose=True)
                             if 'centering' in config_dict:

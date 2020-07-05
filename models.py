@@ -2183,7 +2183,7 @@ class SLayerNN(torch.nn.Module):
         downsample_factor = 300
         pool_1 = nn.Sequential()
         #pool_1.add_module('adaptive_maxpool', nn.AdaptiveMaxPool1d(dense_in//downsample_factor))
-        pool_1.add_module('adaptive_maxpool', nn.AdaptiveMaxPool1d(2))
+        pool_1.add_module('adaptive_maxpool', nn.AdaptiveMaxPool1d(10))
         self.pool_1 = pool_1
 
         linear_1 = nn.Sequential()

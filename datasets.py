@@ -646,7 +646,7 @@ def BigMNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
 
 
 def Canary(batch_size=13, output_size=(3, 512, 512), cache_dir='tmp', rgb=False,
-persistent_homology_output=True):
+           persistent_homology=True):
     """'Canary' dataset designed to test data loading."""
     RC = transforms.RandomCrop((28, 28), padding=3)
     RHF = transforms.RandomHorizontalFlip()
@@ -662,9 +662,9 @@ persistent_homology_output=True):
 
     n_samples=60
 
-    if persistent_homology_output:
+    if persistent_homology:
         # TODO handle RGB
-        transform = transforms.Compose([RC, RHF, RS, GS, TT, DS, PH])
+        transform = transforms.Compose([GS, TT, DS, PH])
     else:
         if rgb:
             transform = transforms.Compose([RC, RHF, TT, NRM, RGB])
@@ -673,13 +673,13 @@ persistent_homology_output=True):
 
     trainset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
                                             transform=transform)
-    if persistent_homology_output:
+    if persistent_homology:
         trainset = CachingDataset(trainset, cache_dir, test=False)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=3, pin_memory=False)
     testset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
                                            transform=transform)
-    if persistent_homology_output:
+    if persistent_homology:
         testset = CachingDataset(testset, cache_dir, test=True)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=3, pin_memory=False)
@@ -745,7 +745,8 @@ def FashionMNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     return train_loader, test_loader, (28, 28), 10
 
 
-def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
+def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp',
+            persistent_homology = False):
 
     # Transformations
     RC = transforms.RandomCrop((32, 32), padding=4)
@@ -755,19 +756,32 @@ def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
     TT = transforms.ToTensor()
     TPIL = transforms.ToPILImage()
     RS = transforms.Resize(224)
+    GS = transforms.Grayscale()
+    DS = transforms.Lambda(lambda x: np.floor(x * 256))
+    PH = persistent_transformations.ToRotatedPersistenceDiagrams()
 
     # Transforms object for trainset with augmentation
     transform_with_aug = transforms.Compose([RC, RHF, TT, NRM])
     # Transforms object for testset with NO augmentation
     transform_no_aug = transforms.Compose([TT, NRM])
 
+    persistent_homology = True
+    if persistent_homology:
+        # Transforms object for trainset with augmentation
+        transform_with_aug = transforms.Compose([RC, RHF, TT, NRM, TPIL, GS, TT, DS, PH])
+        # Transforms object for testset with NO augmentation
+        transform_no_aug = transforms.Compose([TT, NRM, DS, GS, PH])
 
     trainset = torchvision.datasets.CIFAR10(root=cache_dir, train=True,
                                             download=True, transform=transform_with_aug)
+    if persistent_homology:
+        trainset = CachingDataset(trainset, cache_dir, test=False)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=8, pin_memory=True)
     testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
+    if persistent_homology:
+        testset = CachingDataset(testset, cache_dir, test=True)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=8, pin_memory=True)
     train_loader.name = "Cifar10"
