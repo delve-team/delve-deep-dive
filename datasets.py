@@ -18,6 +18,9 @@ import torchvision
 from torchvision import transforms
 from exp_datasets.special_cifar10 import *
 
+
+import persistent_transformations
+
 def get_class_i(x, y, i):
     """
     x: trainset.train_data or testset.test_data
@@ -582,6 +585,45 @@ def BigMNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
                                              shuffle=False, num_workers=3, pin_memory=False)
     train_loader.name = "BigMNIST"
     return train_loader, test_loader, (28, 28), 10
+
+
+def Canary(batch_size=13, output_size=(3, 512, 512), cache_dir='tmp', rgb=False,
+persistent_homology_output=True):
+    """'Canary' dataset designed to test data loading."""
+    RC = transforms.RandomCrop((28, 28), padding=3)
+    RHF = transforms.RandomHorizontalFlip()
+    RVF = transforms.RandomVerticalFlip()
+    NRM = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    TT = transforms.ToTensor()
+    TPIL = transforms.ToPILImage()
+    RS = transforms.Resize(32)
+    RGB = transforms.Lambda(g2rgb)
+    GS = transforms.Grayscale()
+    DS = transforms.Lambda(lambda x: np.floor(x * 256))
+    PH = persistent_transformations.ToRotatedPersistenceDiagrams()
+
+    n_samples=6
+
+    if persistent_homology_output:
+        # TODO handle RGB
+        transform = transforms.Compose([RC, RHF, RS, GS, TT, DS, PH])
+    else:
+        if rgb:
+            transform = transforms.Compose([RC, RHF, TT, NRM, RGB])
+        else:
+            transform = transforms.Compose([RC, RHF, TT, NRM])
+
+    trainset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
+                                            transform=transform)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=3, pin_memory=False)
+    testset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
+                                           transform=transform)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=3, pin_memory=False)
+    train_loader.name = "Canary"
+    return train_loader, test_loader, (512, 512), 10
+
 
 def MNIST(batch_size=12, output_size=(28, 28), cache_dir='tmp'):
     # Transformations

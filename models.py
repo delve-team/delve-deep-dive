@@ -18,6 +18,13 @@ def Inception3(input_size=(32,32), num_classes=10):
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
+import numpy as np
+
+import sys
+sys.path.append('torchph')
+from torchph.nn.slayer import SLayerExponential
+from torchph.nn import slayer
+
 
 ######################## POST ICML MODEL #########################
 
@@ -1983,3 +1990,242 @@ def vgg19_XXXS(*args, **kwargs):
     model = VGG(make_layers(cfg['EXXXS']), final_filter=32, **kwargs)
     model.name = "VGG19_XXXS"
     return model
+
+
+
+
+#from chofer_nips2017.src.sharedCode.experiments import \
+#    UpperDiagonalThresholdedLogTransform, \
+#    pers_dgm_center_init, SLayerPHT, \
+#    PersistenceDiagramProviderCollate
+#from sklearn.model_selection import StratifiedShuffleSplit
+#from rotated_persistence_diagrams_rgb import rotate_all_persistence_diagrams
+
+#sys.path.append(os.path.join(os.path.dirname(__file__),
+#                             "chofer_nips2017/chofer_torchex"))
+
+#import torchph.utils.trainer as tr
+#from torchph.utils.trainer.plugins import *
+
+# Original version from Christoph Hofer
+class UpperDiagonalThresholdedLogTransform:
+    def __init__(self, nu):
+        self.b_1 = (torch.Tensor([1, 1]) / np.sqrt(2))
+        self.b_2 = (torch.Tensor([-1, 1]) / np.sqrt(2))
+        self.nu = nu
+
+    def __call__(self, dgm):
+        dgm = torch.tensor(dgm)
+        if type(dgm) == np.array:
+            if dgm.ndimension() == 0:
+                return dgm
+        elif type(dgm) == list:
+            if len(dgm) == 0:
+                return dgm
+
+        if type(dgm) == np.array:
+            if dgm.is_cuda:
+                self.b_1 = self.b_1.cuda()
+                self.b_2 = self.b_2.cuda()
+
+        x = torch.mul(dgm, self.b_1.repeat(dgm.size(0), 1))
+        x = torch.sum(x, 1).squeeze()
+        y = torch.mul(dgm, self.b_2.repeat( dgm.size(0), 1))
+        y = torch.sum(y, 1).squeeze()
+        i = (y <= self.nu)
+        y[i] = torch.log(y[i] / self.nu) + self.nu
+        ret = torch.stack([x, y], 1)
+        return ret
+
+
+def pers_dgm_center_init(n_elements):
+    centers = []
+    while len(centers) < n_elements:
+        x = np.random.rand(2)
+        if x[1] > x[0]:
+            centers.append(x.tolist())
+
+    return torch.Tensor(centers)
+
+
+
+
+class SLayerPHT(nn.Module):
+    def __init__(self,
+                 n_directions,
+                 n_elements,
+                 point_dim,
+                 n_neighbor_directions=0,
+                 center_init=None,
+                 sharpness_init=None):
+        super(SLayerPHT, self).__init__()
+
+        self.n_directions = n_directions
+        self.n_elements = n_elements
+        self.point_dim = point_dim
+        self.n_neighbor_directions = n_neighbor_directions
+
+        self.slayers = [SLayerExponential(n_elements, point_dim, center_init, sharpness_init)
+                        for i in range(n_directions)]
+        for i, l in enumerate(self.slayers):
+            self.add_module('sl_{}'.format(i), l)
+
+    def forward(self, input):
+        assert len(input) == self.n_directions
+
+        prepared_batches = None
+        if all(slayer.is_prepared_batch(b) for b in input):
+            prepared_batches = input
+        elif all(slayer.is_list_of_tensors(b) for b in input):
+            prepared_batches = [slayer.prepare_batch(input_i, self.point_dim) for input_i in input]
+        else:
+            raise ValueError('Unrecognized input format! Expected list of Tensors or list of SLayer.prepare_batch outputs!')
+
+        batch_size = prepared_batches[0][0].size()[0]
+        assert all(prep_b[0].size()[0] == batch_size for prep_b in prepared_batches)
+
+        output = []
+        for i, sl in enumerate(self.slayers):
+            i_th_output = []
+            i_th_output.append(sl(prepared_batches[i]))
+
+            for j in range(1, self.n_neighbor_directions + 1):
+                i_th_output.append(sl(prepared_batches[i - j]))
+                i_th_output.append(sl(prepared_batches[(i + j) % self.n_directions]))
+
+            if self.n_directions > 0:
+                i_th_output = torch.stack(i_th_output, 1)
+            else:
+                i_th_output = output[0]
+
+            output.append(i_th_output)
+
+        return output
+
+    @property
+    def is_gpu(self):
+        return self.slayers[0].is_gpu
+
+
+
+class SLayerNN(torch.nn.Module):
+    def __init__(self, subscripted_views=[0], directions=32):
+        super(SLayerNN, self).__init__()
+        self.subscripted_views = subscripted_views
+
+        n_elements = 15
+        n_filters = directions
+        self.directions = directions
+        stage_2_out = 5
+        n_neighbor_directions = 1
+
+        self.transform = UpperDiagonalThresholdedLogTransform(0.1)
+
+        self.pht_sl = SLayerPHT(len(subscripted_views) * directions,
+                                n_elements,
+                                2,
+                                n_neighbor_directions=n_neighbor_directions,
+                                center_init=self.transform(
+                                        pers_dgm_center_init(n_elements)),
+                                sharpness_init=torch.ones(n_elements, 2) * 4)
+
+        self.stage_1 = []
+        for i in range(len(subscripted_views) * self.directions):
+            seq = nn.Sequential()
+            seq.add_module('conv_1', nn.Conv1d(1 + 2 * n_neighbor_directions,
+                                               n_filters//2, 1, bias=False))
+            seq.add_module('batch_norm_1', nn.BatchNorm1d(n_filters//2))
+            seq.add_module('relu_1', nn.ReLU())
+
+            self.stage_1.append(seq)
+            self.add_module('stage_1_{}'.format(i), seq)
+
+        self.stage_3 = []
+        for i in range(len(subscripted_views) * self.directions):
+            seq = nn.Sequential()
+            seq.add_module('conv_1', nn.Conv1d(n_filters//2, n_filters//2, 1, bias=False))
+            seq.add_module('batch_norm_1', nn.BatchNorm1d(n_filters//2))
+            seq.add_module('relu_1', nn.ReLU())
+
+            seq.add_module('conv_2', nn.Conv1d(n_filters//2, n_filters//2, 1, bias=False))
+            seq.add_module('batch_norm_2', nn.BatchNorm1d(n_filters//2))
+            seq.add_module('relu_2', nn.ReLU())
+
+            self.stage_3.append(seq)
+            self.add_module('stage_3_{}'.format(i), seq)
+
+        self.stage_4 = []
+        for i in range(len(subscripted_views)):
+            seq = nn.Sequential()
+            seq.add_module('conv_3', nn.Conv1d(n_filters//2, n_filters, 1, bias=False))
+            seq.add_module('batch_norm_3', nn.BatchNorm1d(n_filters))
+            seq.add_module('relu_3', nn.ReLU())
+
+            self.stage_4.append(seq)
+            self.add_module('stage_4_{}'.format(i), seq)
+
+        self.stage_2 = []
+        for i in range(len(subscripted_views)):
+            seq = nn.Sequential()
+            seq.add_module('batch_norm_1', nn.BatchNorm1d(n_elements))
+            seq.add_module('Dropout_1', nn.Dropout(0.25))
+            seq.add_module('linear_1', nn.Linear(n_elements, n_elements//2))
+            seq.add_module('relu_1', nn.ReLU())
+            seq.add_module('batch_norm_2', nn.BatchNorm1d(n_elements//2))
+            seq.add_module('Dropout_2', nn.Dropout(0.25))
+            seq.add_module('linear_2', nn.Linear(n_elements//2, stage_2_out))
+            self.stage_2.append(seq)
+            self.add_module('stage_2_{}'.format(i), seq)
+
+        dense_in = len(subscripted_views) * n_elements
+
+
+        downsample_factor = 300
+        pool_1 = nn.Sequential()
+        #pool_1.add_module('adaptive_maxpool', nn.AdaptiveMaxPool1d(dense_in//downsample_factor))
+        pool_1.add_module('adaptive_maxpool', nn.AdaptiveMaxPool1d(2))
+        self.pool_1 = pool_1
+
+        linear_1 = nn.Sequential()
+        #linear_1.add_module('batch_norm_1', nn.BatchNorm1d(dense_in//downsample_factor))
+        linear_1.add_module('drop_out_1', nn.Dropout(0.25))
+        linear_1.add_module('relu_1', nn.ReLU())
+        #linear_1.add_module('linear_2', nn.Linear(dense_in//downsample_factor, 200))
+        linear_1.add_module('softmax_2', nn.Softmax())
+        self.linear_1 = linear_1
+
+    def forward(self, batch):
+        x = batch.permute(1, 0, 2)
+        x = [[self.transform(dgm) for dgm in view_batch] for view_batch in x]
+
+        x = self.pht_sl(x)
+
+
+        x = [l(xx) for l, xx in zip(self.stage_1, x)]
+
+        x = [l(xx) + xx for l, xx in zip(self.stage_3, x)]
+
+        x = [l(xx) for l, xx in zip(self.stage_4, x)]
+
+        x = [torch.squeeze(torch.max(xx, 1)[0]) for xx in x]
+
+        x = torch.stack(x)
+        x = x.permute(1, 0, 2)
+
+
+        x = self.pool_1(x)
+        x = self.linear_1(x)
+
+        x = torch.squeeze(x) # Get rid of directions
+
+        return x
+
+
+def slayerNN(*args, **kwargs):
+    """SLayer basic model
+    """
+    model = SLayerNN()
+    model.name = "SLayerNN"
+    return model
+
+

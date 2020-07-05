@@ -1,0 +1,9 @@
+[submodule "tda-toolkit"]
+	path = tda-toolkit
+	url = https://github.com/c-hofer/tda-toolkit.git
+[submodule "torchph"]
+	path = torchph
+	url = https://github.com/c-hofer/torchph.git
+[submodule "dipha"]
+	path = dipha
+	url = https://github.com/DIPHA/dipha.git

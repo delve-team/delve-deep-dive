@@ -182,7 +182,10 @@ class Trainer:
             if self.half:
                 inputs, labels = inputs.to(self.device).half(), labels.to(self.device)
             else:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                try:
+                    inputs, labels = inputs.to(self.device), labels.to(self.device)
+                except AttributeError:
+                    pass
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)

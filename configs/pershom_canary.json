@@ -1,0 +1,11 @@
+{
+  "models" : ["slayerNN"],
+  "dataset": ["Canary"],
+  "epochs":   2,
+  "batch_sizes": [2],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}
