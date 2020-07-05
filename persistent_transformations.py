@@ -60,7 +60,7 @@ def calculate_rotated_diagrams(monochrome_image, directions, homology_dimensions
             except Exception as e:
                 # TODO fix diagram length
                 diagrams.append([0, 0])
-                print(e)
+                print("Persistent Homology transformation encountered error: {}".format(e))
 
     if len(diagrams) != directions * len(homology_dimensions):
         raise ValueError('Diagram is genenerate. Transformation failed')

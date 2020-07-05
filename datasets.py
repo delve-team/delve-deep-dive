@@ -18,8 +18,10 @@ import torchvision
 from torchvision import transforms
 from exp_datasets.special_cifar10 import *
 
-
 import persistent_transformations
+
+import pickle
+
 
 def get_class_i(x, y, i):
     """
@@ -38,6 +40,62 @@ def get_class_i(x, y, i):
     x_i = [x[j] for j in pos_i]
 
     return x_i
+
+
+class CachingDataset(Dataset):
+    """ The CachingDataset class caches dataset operations.
+    This is useful if data transformations take significant time.
+    The dataset saves samples to disk using pickle.
+
+    This class loads data on demand, to ensure quick failures
+    on training errors.
+
+    Note:
+        Random data transformations will only be run once,
+        when first requesting data.
+
+    Attributes:
+        dataset (Dataset): The dataset to cache get operations from.
+        cache_dir (string): Directory to save caches.
+        test (bool): Indicates if dataset is a train or test set.
+        use_io_cache (bool): Whether to cache pickle operations.
+    """
+    def __init__(self, dataset: torch.utils.data.IterableDataset,
+                 cache_dir: str, test: bool, use_io_cache: bool = False):
+        self.dataset = dataset
+        self.cache_dir = cache_dir
+        self.test = test
+        self.use_io_cache = use_io_cache
+        self.cache = dict()
+
+    def _get_pickle_file(self, index):
+        datatype = 'test' if self.test else 'train'
+        filename = os.path.join(self.cache_dir, 'transformations',
+                                self.dataset.__class__.__name__,
+                                datatype,
+                                "sample_{}.pickle".format(index))
+        return filename
+
+    def __getitem__(self, index):
+        if self.use_io_cache and index in self.cache:
+            return self.cache[index]
+
+        filename = self._get_pickle_file(index)
+        if os.path.exists(filename):
+            with open(filename, 'rb') as picklefile:
+                sample = pickle.load(picklefile)
+        else:
+            sample = self.dataset[index]
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            with open(filename, 'wb') as picklefile:
+                pickle.dump(sample, picklefile)
+
+        if self.use_io_cache:
+            self.cache[index] = sample
+        return sample
+
+    def __len__(self):
+        return len(self.dataset)
 
 
 class DatasetMaker(Dataset):
@@ -602,7 +660,7 @@ persistent_homology_output=True):
     DS = transforms.Lambda(lambda x: np.floor(x * 256))
     PH = persistent_transformations.ToRotatedPersistenceDiagrams()
 
-    n_samples=6
+    n_samples=60
 
     if persistent_homology_output:
         # TODO handle RGB
@@ -615,10 +673,14 @@ persistent_homology_output=True):
 
     trainset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
                                             transform=transform)
+    if persistent_homology_output:
+        trainset = CachingDataset(trainset, cache_dir, test=False)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                               shuffle=True, num_workers=3, pin_memory=False)
     testset = torchvision.datasets.FakeData(size=n_samples, image_size=output_size, num_classes=2,
                                            transform=transform)
+    if persistent_homology_output:
+        testset = CachingDataset(testset, cache_dir, test=True)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=3, pin_memory=False)
     train_loader.name = "Canary"
