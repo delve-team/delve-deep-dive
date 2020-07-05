@@ -1,0 +1,11 @@
+{
+  "models" : ["slayerNN"],
+  "dataset": ["Cifar10"],
+  "epochs":   5,
+  "batch_sizes": [8],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true,
+  "downsampling": [32]
+}
