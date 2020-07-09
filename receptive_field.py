@@ -145,6 +145,13 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     total_output = 0
     trainable_params = 0
     i = 0
+    result = {
+        'Layer': [],
+        'map_size': [],
+        'start': [],
+        'jump': [],
+        'receptive_field': []
+    }
     for layer in receptive_field:
         if receptive_field[layer]['name'] != 'Conv2d':
             continue
@@ -159,12 +166,21 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
             str(receptive_field[layer]["j"]),
             format(str(receptive_field[layer]["r"]))
         )
+
+        result['Layer'].append(str(layer)+'-'+receptive_field[layer]['name'])
+        result['map_size'].append(receptive_field[layer]["output_shape"][2:])
+        result['start'].append(receptive_field[layer]["start"])
+        result['jump'].append(receptive_field[layer]["j"])
+        result['receptive_field'].append(receptive_field[layer]["r"])
+
+
+
         print(line_new)
 
     print("==============================================================================")
     # add input_shape
     receptive_field["input_size"] = input_size
-    return receptive_field
+    return result
 
 
 def receptive_field_for_unit(receptive_field_dict, layer, unit_position):
@@ -221,12 +237,26 @@ class Net(nn.Module):
         y = self.maxpool(y)
         return y
 
-from models import vgg19, vgg16, vgg11, vgg13, vgg8, resnet18, resnet50, vgg13_d4, vgg13_d2, vgg13_d3, resnet18noskip
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # PyTorch v0.4.0
-model1 = vgg13(num_classes=10, input_size=(1024, 1024)).to(device)
-model2 = vgg13(num_classes=10, input_size=(1024, 1024)).to(device)
-model3 = vgg13_d2(num_classes=10, input_size=(1024, 1024)).to(device)
-receptive_field_dict = receptive_field(model1, (3, 300, 300))
-receptive_field_dict = receptive_field(model2, (3, 150, 150))
-receptive_field_dict = receptive_field(model3, (3, 150, 150))
-#receptive_field_for_unit(receptive_field_dict, "1", (122, 122))
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--model', action='store', nargs='+', type=str, dest='model_name')
+parser.add_argument('-d', '--dest', action='store', type=str, dest='filename')
+
+
+if __name__== '__main__':
+    import models
+    import pandas as pd
+    import os
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args = parser.parse_args()
+    for model_name in args.model_name:
+        model_func = getattr(models, model_name)
+        model = model_func(num_classes=10, input_size=(416, 416))
+        model = model.to(device)
+        receptive_field_dict = receptive_field(model, (3, 416, 416))
+        print(receptive_field_dict)
+        if not os.path.exists('./receptive_field'):
+            os.makedirs('./receptive_field')
+        savepath = os.path.join('./receptive_field', model.name+'.csv')
+        pd.DataFrame.from_dict(receptive_field_dict).to_csv(savepath, sep=';')

@@ -1,6 +1,6 @@
 {
   "models" : ["vgg13"],
-  "dataset": ["Cifar10_38", "Cifar10_75", "Cifar10_150", "Cifar10_300", "Cifar10_600"],
+  "dataset": ["Cifar10_38", "Cifar10_75", "Cifar10_150", "Cifar10_300"],
   "epochs":   30,
   "batch_sizes": [16],
   "optimizer": "adam",
