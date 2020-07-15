@@ -1,6 +1,6 @@
 {
-  "models" : ["vgg13", "vgg13_late", "vgg13_late_wide", "vgg13_wide"],
-  "dataset": ["Cifar10_150"],
+  "models" : ["vgg13_late"],
+  "dataset": ["Cifar10_238"],
   "epochs":   30,
   "batch_sizes": [32],
   "optimizer": "adam",

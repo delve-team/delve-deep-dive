@@ -565,7 +565,7 @@ cfg = {
     'BXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
 
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B_Early': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 256, 256, 512, 512, 512, 512, 'M'],
+    'B_Late': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 256, 256, 512, 512, 512, 512, 'M'],
     'B_Wide': [128, 'M', 256, 'M', 512, 'M', 1024, 'M', 1024, 'M'],
     'B_Late_Wide': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 2560, 'M'],
 
@@ -1622,7 +1622,7 @@ def vgg13_wide(*args, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = VGG(make_layers(cfg['B_Wide']), **kwargs)
+    model = VGG(make_layers(cfg['B_Wide']), final_filter=1024, **kwargs)
     model.name = "VGG13_Wide"
     return model
 
@@ -1631,7 +1631,7 @@ def vgg13_late(*args, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = VGG(make_layers(cfg['B_Wide']), **kwargs)
+    model = VGG(make_layers(cfg['B_Late']), **kwargs)
     model.name = "VGG13_Late"
     return model
 
@@ -1640,7 +1640,7 @@ def vgg13_late_wide(*args, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = VGG(make_layers(cfg['B_Late_Wide']), **kwargs)
+    model = VGG(make_layers(cfg['B_Late_Wide']), final_filter=2560, **kwargs)
     model.name = "VGG13_Late_Wide"
     return model
 
