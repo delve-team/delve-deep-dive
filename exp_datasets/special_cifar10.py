@@ -6,7 +6,6 @@ from urllib.request import urlretrieve
 from collections import OrderedDict
 from torch.utils.data import SubsetRandomSampler, DataLoader
 from torch.utils.data import Dataset
-from dataclasses import dataclass, field
 import json
 import scipy
 import scipy.misc
@@ -44,13 +43,13 @@ def Cifar10_{}(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                              shuffle=False, num_workers=8, pin_memory=True)
     train_loader.name = "Cifar10_{}"
-    return train_loader, test_loader, (1024, 1024), 10
+    return train_loader, test_loader, ({}, {}), 10
     
     """
 
 resolution = [38, 75, 132, 140, 150, 300, 600]
 
 for res in resolution:
-    func_code = func_template.format(res, res, res)
+    func_code = func_template.format(res, res, res, res, res)
     exec(func_code)
 

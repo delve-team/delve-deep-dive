@@ -168,7 +168,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
         )
 
         result['Layer'].append(str(layer)+'-'+receptive_field[layer]['name'])
-        result['map_size'].append(receptive_field[layer]["output_shape"][2:])
+        result['map_size'].append(receptive_field[layer]["output_shape"][2])
         result['start'].append(receptive_field[layer]["start"])
         result['jump'].append(receptive_field[layer]["j"])
         result['receptive_field'].append(receptive_field[layer]["r"])
@@ -237,19 +237,19 @@ class Net(nn.Module):
         y = self.maxpool(y)
         return y
 
+
 import argparse
+import json
+import itertools
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-m', '--model', action='store', nargs='+', type=str, dest='model_name')
-parser.add_argument('-d', '--dest', action='store', type=str, dest='filename')
+parser.add_argument('-m', '--model', action='store', nargs='+', type=str, dest='model_name', default=None)
+parser.add_argument('-d', '--dest', action='store', type=str, dest='filename', default=None)
+parser.add_argument('-c', '--config', action='store', type=str, dest='config', default=None)
+parser.add_argument('-cs', '--configs', action='store', nargs='+', type=str, dest='configs', default=None)
 
 
-if __name__== '__main__':
-    import models
-    import pandas as pd
-    import os
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    args = parser.parse_args()
+def _run_manual_config_mode(args, device):
     for model_name in args.model_name:
         model_func = getattr(models, model_name)
         model = model_func(num_classes=10, input_size=(416, 416))
@@ -258,5 +258,38 @@ if __name__== '__main__':
         print(receptive_field_dict)
         if not os.path.exists('./receptive_field'):
             os.makedirs('./receptive_field')
-        savepath = os.path.join('./receptive_field', model.name+'.csv')
+        savepath = os.path.join('./receptive_field', model.name + '.csv')
         pd.DataFrame.from_dict(receptive_field_dict).to_csv(savepath, sep=';')
+
+
+def _run_experiment_setup_config_mode(args, device):
+    config_dict = json.load(open(args.config, 'r'))
+    for model_name, dataset_name in itertools.product(config_dict['models'], config_dict['dataset']):
+        model_func = getattr(models, model_name)
+        data_func = getattr(datasets, dataset_name)
+        _, _, input_size, num_classes = data_func()
+        print(input_size)
+        model = model_func(num_classes=num_classes, input_size=input_size)
+        model.to(device)
+        receptive_field_dict = receptive_field(model, (3, *input_size))
+        if not os.path.exists('./receptive_field'):
+            os.makedirs('./receptive_field')
+        savepath = os.path.join('./receptive_field', model.name + '_' + dataset_name + '.csv')
+        pd.DataFrame.from_dict(receptive_field_dict).to_csv(savepath, sep=';')
+
+
+if __name__== '__main__':
+    import models
+    import datasets
+    import pandas as pd
+    import os
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args = parser.parse_args()
+    if args.config is None and args.configs is None:
+        _run_manual_config_mode(args, device)
+    elif args.configs is not None:
+        for config in args.configs:
+            args.config = config
+            _run_experiment_setup_config_mode(args, device)
+    else:
+        _run_experiment_setup_config_mode(args, device)
