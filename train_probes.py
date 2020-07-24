@@ -145,6 +145,9 @@ def train_model_for_data_mp(args):
 
 
 def main(args):
+    if os.path.exists('results_{}.csv'.format(os.path.basename(args.folder))):
+        print('Detecting Existing Result, returning...')
+        return
     names, t_accs, e_accs = [], [], []
     train_set, eval_set = obtain_all_dataset(args.folder)
     print(len(train_set), len(eval_set))

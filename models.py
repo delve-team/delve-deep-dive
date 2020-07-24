@@ -272,7 +272,7 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, planes, blocks, stride=1, threshold=.999, centering=False):
         downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
+        if (stride != 1 or self.inplanes != planes * block.expansion) and not self.noskip:
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride),
                 nn.BatchNorm2d(planes * block.expansion),
@@ -427,6 +427,58 @@ def resnet18(pretrained=False, **kwargs):
     return model
 
 
+def resnet18_early(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 1, 5], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_Early'
+    return model
+
+
+def resnet18_late(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [5, 1, 1, 1], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_Late'
+    return model
+
+
+def resnet18_wide(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 1, 1], scale_factor=0.5, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_Wide'
+    return model
+
+
+def resnet18_thin(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [4, 4, 4, 4], scale_factor=2, **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_Thin'
+    return model
+
+
 def resnet34(pretrained=False, **kwargs):
     """Constructs a ResNet-34 model.
 
@@ -565,9 +617,11 @@ cfg = {
     'BXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
 
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'B_Early': [64, 64, 128, 128, 256, 256, 'M', 512, 'M', 512, 'M', 512, 'M', 512, 'M'],
     'B_Late': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 256, 256, 512, 512, 512, 512, 'M'],
     'B_Wide': [128, 'M', 256, 'M', 512, 'M', 1024, 'M', 1024, 'M'],
     'B_Late_Wide': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 2560, 'M'],
+    'B_Thin': [32, 32, 32, 32, 'M', 64, 64, 64, 64, 'M', 128, 128, 128, 128, 'M', 256, 256, 256, 256, 'M', 256, 256, 256, 256, 'M'],
 
 
     'Blin': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
@@ -1615,6 +1669,24 @@ def vgg13(*args, **kwargs):
     """
     model = VGG(make_layers(cfg['B']), **kwargs)
     model.name = "VGG13"
+    return model
+
+def vgg13_early(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B_Early']), final_filter=512, **kwargs)
+    model.name = "VGG13_Early"
+    return model
+
+def vgg13_thin(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B_Thin']), final_filter=256, **kwargs)
+    model.name = "VGG13_Thin"
     return model
 
 def vgg13_wide(*args, **kwargs):

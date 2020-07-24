@@ -47,7 +47,7 @@ def Cifar10_{}(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
     
     """
 
-resolution = [38, 75, 132, 140, 150, 300, 600]
+resolution = [38, 75, 78, 88, 108, 109, 132, 140, 150, 238, 264, 300, 435, 600]
 
 for res in resolution:
     func_code = func_template.format(res, res, res, res, res)

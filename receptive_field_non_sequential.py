@@ -268,12 +268,11 @@ def _run_experiment_setup_config_mode(args, device):
         model_func = getattr(models, model_name)
         data_func = getattr(datasets, dataset_name)
         _, _, input_size, num_classes = data_func()
-        print(input_size)
-        if 'resnet' not in model_name or 'noskip' in model_name:
+        print(model_name)
+        if 'resnet' not in model_name:
             model = model_func(num_classes=num_classes, input_size=input_size)
         else:
             model = model_func(num_classes=num_classes, input_size=input_size, noskip=True)
-        #model = model_func(num_classes=num_classes, input_size=input_size)
         model.to(device)
         receptive_field_dict = receptive_field(model, (3, *input_size))
         if not os.path.exists('./receptive_field'):
