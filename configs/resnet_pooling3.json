@@ -1,0 +1,15 @@
+{
+  "models" : [
+    "resnet18_late",
+    "resnet18_early",
+    "resnet18_wide",
+    "resnet18_thin"
+  ],
+  "dataset": ["Cifar10_150"],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

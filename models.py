@@ -127,13 +127,13 @@ def pretrainedVGG19(num_classes, *args, **kwargs):
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+    return nn.Conv2d(int(in_planes), int(out_planes), kernel_size=3, stride=stride,
                      padding=1, bias=False)
 
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+    return nn.Conv2d(int(in_planes), int(out_planes), kernel_size=1, stride=stride, bias=False)
 
 
 class BasicBlock(nn.Module):
@@ -239,19 +239,19 @@ class ResNet(nn.Module):
         self.inplanes = 64 // scale_factor
         self.thresh = thresh
         self.centering = centering
-        self.conv1 = nn.Conv2d(3, 64 // scale_factor, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(3, int(64 // scale_factor), kernel_size=7, stride=2, padding=3,
                                bias=False)
         if PCA:
             self.conv1pca = Conv2DPCALayer(64, threshold=thresh, centering=centering)
-        self.bn1 = nn.BatchNorm2d(64 // scale_factor)
+        self.bn1 = nn.BatchNorm2d(int(64 // scale_factor))
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64 // scale_factor, layers[0], threshold=thresh, centering=centering)
-        self.layer2 = self._make_layer(block, 128 // scale_factor, layers[1], stride=2, threshold=thresh, centering=centering)
-        self.layer3 = self._make_layer(block, 256 // scale_factor, layers[2], stride=2, threshold=thresh, centering=centering)
-        self.layer4 = self._make_layer(block, 512 // scale_factor, layers[3], stride=2, threshold=thresh, centering=centering)
+        self.layer1 = self._make_layer(block, int(64 // scale_factor), layers[0], threshold=thresh, centering=centering)
+        self.layer2 = self._make_layer(block, int(128 // scale_factor), layers[1], stride=2, threshold=thresh, centering=centering)
+        self.layer3 = self._make_layer(block, int(256 // scale_factor), layers[2], stride=2, threshold=thresh, centering=centering)
+        self.layer4 = self._make_layer(block, int(512 // scale_factor), layers[3], stride=2, threshold=thresh, centering=centering)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear((512 // scale_factor) * block.expansion, num_classes)
+        self.fc = nn.Linear(int(512 // scale_factor) * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -617,6 +617,7 @@ cfg = {
     'BXXXS': [4, 4, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
 
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    'B_Strides': [64, (64, 2), 128, (128, 2), 256, (256, 2), 512, (512, 2), 512, (512, 2)],
     'B_Early': [64, 64, 128, 128, 256, 256, 'M', 512, 'M', 512, 'M', 512, 'M', 512, 'M'],
     'B_Late': [64, 'M', 64, 'M', 128, 'M', 128, 'M', 256, 256, 512, 512, 512, 512, 'M'],
     'B_Wide': [128, 'M', 256, 'M', 512, 'M', 1024, 'M', 1024, 'M'],
@@ -1007,6 +1008,16 @@ def make_layers(cfg, batch_norm=True, k_size=3, in_channels=3, pca=PCA, thresh=.
     for v in cfg:
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        elif isinstance(v, list) or isinstance(v, tuple):
+            filters, stride = v
+            conv2d = nn.Conv2d(in_channels, filters, kernel_size=k_size, padding=padding, dilation=dilation, stride=stride)
+            if batch_norm and pca:
+                layers += [conv2d, Conv2DPCALayer(in_filters=filters, threshold=thresh, centering=centering, downsampling=True), nn.BatchNorm2d(filters), nn.ReLU(inplace=True)]
+            elif batch_norm:
+                layers += [conv2d, nn.BatchNorm2d(filters), nn.ReLU(inplace=True)]
+            else:
+                layers += [conv2d, nn.ReLU(inplace=True)]
+            in_channels = filters
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=k_size, padding=padding, dilation=dilation)
             if batch_norm and pca:
@@ -1670,6 +1681,17 @@ def vgg13(*args, **kwargs):
     model = VGG(make_layers(cfg['B']), **kwargs)
     model.name = "VGG13"
     return model
+
+
+def vgg13_strides(*args, **kwargs):
+    """VGG 16-layer model (configuration "D")
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = VGG(make_layers(cfg['B_Strides']), **kwargs)
+    model.name = "VGG13_Strides"
+    return model
+
 
 def vgg13_early(*args, **kwargs):
     """VGG 16-layer model (configuration "D")

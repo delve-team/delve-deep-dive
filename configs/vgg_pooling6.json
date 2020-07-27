@@ -1,0 +1,10 @@
+{
+  "models" : ["vgg13_strides", "vgg13"],
+  "dataset": ["Cifar10"],
+  "epochs":   30,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}
