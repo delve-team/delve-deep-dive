@@ -427,6 +427,28 @@ def resnet18(pretrained=False, **kwargs):
     return model
 
 
+def resnet18_l2_w1(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [4, 4, 4, 4], **kwargs)
+    model.name = 'ResNet18(length=2 width=1)'
+    return model
+
+
+def resnet36_l2_w2(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [4, 4, 4, 4], scale_factor=2, **kwargs)
+    model.name = 'ResNet18(length=2 width=2)'
+    return model
+
+
 def resnet18_early(pretrained=False, **kwargs):
     """Constructs a ResNet-18 model.
 

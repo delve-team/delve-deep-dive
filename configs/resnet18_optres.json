@@ -1,0 +1,27 @@
+{
+  "models" : [
+    "resnet18"
+  ],
+  "dataset": [
+    "Cifar10_125",
+    "Cifar10_175",
+    "Cifar10_225",
+    "Cifar10_275",
+    "Cifar10_450",
+    "Cifar10_50",
+    "Cifar10_100",
+    "Cifar10_150",
+    "Cifar10_200",
+    "Cifar10_250",
+    "Cifar10_300",
+    "Cifar10_350",
+    "Cifar10_400",
+    "Cifar10_500"
+  ],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

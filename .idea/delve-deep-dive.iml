@@ -19,6 +19,7 @@
       <excludeFolder url="file://$MODULE_DIR$/latent_datasets" />
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/python/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/receptive_field" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
