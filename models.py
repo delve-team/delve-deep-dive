@@ -247,9 +247,9 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, int(64 // scale_factor), layers[0], threshold=thresh, centering=centering)
-        self.layer2 = self._make_layer(block, int(128 // scale_factor), layers[1], stride=2, threshold=thresh, centering=centering)
-        self.layer3 = self._make_layer(block, int(256 // scale_factor), layers[2], stride=2, threshold=thresh, centering=centering)
-        self.layer4 = self._make_layer(block, int(512 // scale_factor), layers[3], stride=2, threshold=thresh, centering=centering)
+        self.layer2 = None if layers[1] is None else self._make_layer(block, int(128 // scale_factor), layers[1], stride=2, threshold=thresh, centering=centering)
+        self.layer3 = None if layers[2] is None else self._make_layer(block, int(256 // scale_factor), layers[2], stride=2, threshold=thresh, centering=centering)
+        self.layer4 = None if layers[3] is None else self._make_layer(block, int(512 // scale_factor), layers[3], stride=2, threshold=thresh, centering=centering)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(int(512 // scale_factor) * block.expansion, num_classes)
 
@@ -295,9 +295,12 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        if self.layers2 is not None:
+            x = self.layer2(x)
+        if self.layers3 is not None:
+            x = self.layer3(x)
+        if self.layers4 is not None:
+            x = self.layer4(x)
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
@@ -427,6 +430,17 @@ def resnet18(pretrained=False, **kwargs):
     return model
 
 
+def resnet18_l05_w05(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 1, 1], scale_factor=2, **kwargs)
+    model.name = 'ResNet18(length=05 width=05)'
+    return model
+
+
 def resnet18_l2_w1(pretrained=False, **kwargs):
     """Constructs a ResNet-18 model.
 
@@ -444,7 +458,7 @@ def resnet36_l2_w2(pretrained=False, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = ResNet(BasicBlock, [4, 4, 4, 4], scale_factor=2, **kwargs)
+    model = ResNet(BasicBlock, [4, 4, 4, 4], scale_factor=0.5, **kwargs)
     model.name = 'ResNet18(length=2 width=2)'
     return model
 
