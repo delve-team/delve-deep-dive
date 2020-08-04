@@ -9,7 +9,7 @@
 
   ],
   "epochs":   30,
-  "batch_sizes": [64],
+  "batch_sizes": [32],
   "optimizer": "adam",
   "conv_method": "channelwise",
   "threshs": [10.0],
