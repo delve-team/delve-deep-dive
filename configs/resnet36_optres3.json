@@ -1,0 +1,17 @@
+{
+  "models" : [
+    "resnet36_l2_w2"
+  ],
+  "dataset": [
+    "Cifar10_400",
+    "Cifar10_200",
+    "Cifar10_100"
+
+  ],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}
