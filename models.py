@@ -235,6 +235,9 @@ class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False, thresh=.999, centering=False, noskip=False, scale_factor=1, **kwargs):
         super(ResNet, self).__init__()
+        if len(layers) <= 4:
+            for _ in range(len(layers), 9):
+                layers.append(None)
         self.noskip = noskip
         self.inplanes = 64 // scale_factor
         self.thresh = thresh
@@ -250,8 +253,12 @@ class ResNet(nn.Module):
         self.layer2 = None if layers[1] is None else self._make_layer(block, int(128 // scale_factor), layers[1], stride=2, threshold=thresh, centering=centering)
         self.layer3 = None if layers[2] is None else self._make_layer(block, int(256 // scale_factor), layers[2], stride=2, threshold=thresh, centering=centering)
         self.layer4 = None if layers[3] is None else self._make_layer(block, int(512 // scale_factor), layers[3], stride=2, threshold=thresh, centering=centering)
+        self.layer5 = None if layers[4] is None else self._make_layer(block, int(512 // scale_factor), layers[4], stride=2, threshold=thresh, centering=centering)
+        self.layer6 = None if layers[5] is None else self._make_layer(block, int(512 // scale_factor), layers[5], stride=2, threshold=thresh, centering=centering)
+        self.layer7 = None if layers[6] is None else self._make_layer(block, int(512 // scale_factor), layers[6], stride=2, threshold=thresh, centering=centering)
+        self.layer8 = None if layers[7] is None else self._make_layer(block, int(512 // scale_factor), layers[7], stride=2, threshold=thresh, centering=centering)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(int(512 // scale_factor) * block.expansion, num_classes)
+        self.fc = nn.Linear(int(self.get_fully_connected_units(layers) // scale_factor) * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -286,6 +293,20 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
+    def _compute_num_filters(self, layer):
+        return min(64 * (2**layer), 512)
+
+    def _last_not_none(self, l):
+        result = -1
+        for i, elem in enumerate(l):
+            if elem is None:
+                return result
+            result = i
+        return result
+
+    def get_fully_connected_units(self, layers):
+        return self._compute_num_filters(self._last_not_none(layers))
+
     def forward(self, x):
         x = self.conv1(x)
         if PCA:
@@ -295,12 +316,20 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         x = self.layer1(x)
-        if self.layers2 is not None:
+        if self.layer2 is not None:
             x = self.layer2(x)
-        if self.layers3 is not None:
+        if self.layer3 is not None:
             x = self.layer3(x)
-        if self.layers4 is not None:
+        if self.layer4 is not None:
             x = self.layer4(x)
+        if self.layer5 is not None:
+            x = self.layer5(x)
+        if self.layer6 is not None:
+            x = self.layer6(x)
+        if self.layer7 is not None:
+            x = self.layer7(x)
+        if self.layer8 is not None:
+            x = self.layer8(x)
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
@@ -427,6 +456,69 @@ def resnet18(pretrained=False, **kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
     model.name = 'ResNet18'
+    return model
+
+
+def resnet18_dspl2(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [4, 4, None, None], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_DSPL2'
+    return model
+
+
+def resnet18_dspl3(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [2, 3, 3, None], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_DSPL3'
+    return model
+
+def resnet18_dspl5(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 2, 2, 2, None, None, None], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_DSPL5'
+    return model
+
+
+def resnet18_dspl6(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 1, 1, 2, 2, None, None], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_DSPL6'
+    return model
+
+def resnet18_dspl8(pretrained=False, **kwargs):
+    """Constructs a ResNet-18 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(BasicBlock, [1, 1, 1, 1, 1, 1, 1, 1], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+    model.name = 'ResNet18_DSPL8'
     return model
 
 

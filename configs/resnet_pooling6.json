@@ -1,0 +1,17 @@
+{
+  "models" : [
+    "resnet18_dspl2",
+    "resnet18_dspl3",
+    "resnet18_dspl5",
+    "resnet18_dspl6",
+    "resnet18_dspl8",
+    "resnet18"
+  ],
+  "dataset": ["Cifar10_300"],
+  "epochs":   30,
+  "batch_sizes": [64],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

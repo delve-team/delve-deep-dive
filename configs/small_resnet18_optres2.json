@@ -1,0 +1,18 @@
+{
+  "models" : [
+    "resnet18_l05_w05"
+  ],
+  "dataset": [
+    "TinyImageNet_100",
+    "TinyImageNet_200",
+    "TinyImageNet_300",
+    "TinyImageNet_400"
+
+  ],
+  "epochs":   30,
+  "batch_sizes": [128],
+  "optimizer": "adam",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

@@ -16,6 +16,7 @@ import torch.utils.data
 import torchvision
 from torchvision import transforms
 from exp_datasets.special_cifar10 import *
+from exp_datasets.special_tiny_imagenet import *
 
 def get_class_i(x, y, i):
     """
