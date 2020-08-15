@@ -5,7 +5,8 @@ import torchvision
 from math import floor
 from operator import mul
 from pca_layers import Conv2DPCALayer, LinearPCALayer
-from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig
+from torchvision.models import ResNet, vgg19_bn as vgg19_orig, vgg16_bn as vgg16_orig, resnet34 as resnet34_orig, resnet152 as resnet152_orig, resnet18 as resnet18_orig
+from pc_models.resnet import ResNet18 as rs18
 
 PCA = False
 PRETRAINED = False
@@ -111,6 +112,17 @@ def pretrainedResNet34(num_classes, *args, **kwargs):
     net = resnet34_orig(pretrained=True, num_classes=num_classes)
     net.name = 'ResNet34'
     return net
+
+def OG_ResNet18(num_classes, *args, **kwargs):
+    net = resnet18_orig(pretrained=False, num_classes=num_classes)
+    net.name = 'ResNet18_OG'
+    return net
+
+def PC_ResNet18(num_classes, *args, **kwargs):
+    net = rs18()
+    net.name = 'ResNet18_PC'
+    return net
+
 
 
 def pretrainedVGG16(num_classes, *args, **kwargs):
@@ -249,7 +261,7 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(int(64 // scale_factor))
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, int(64 // scale_factor), layers[0], threshold=thresh, centering=centering)
+        self.layer1 = self._make_layer(block, int(64 // scale_factor), layers[0], stride=1, threshold=thresh, centering=centering)
         self.layer2 = None if layers[1] is None else self._make_layer(block, int(128 // scale_factor), layers[1], stride=2, threshold=thresh, centering=centering)
         self.layer3 = None if layers[2] is None else self._make_layer(block, int(256 // scale_factor), layers[2], stride=2, threshold=thresh, centering=centering)
         self.layer4 = None if layers[3] is None else self._make_layer(block, int(512 // scale_factor), layers[3], stride=2, threshold=thresh, centering=centering)

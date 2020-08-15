@@ -516,7 +516,7 @@ def Cifar10(batch_size=12, output_size=(224, 224), cache_dir='tmp'):
                                               shuffle=True, num_workers=8, pin_memory=True)
     testset = torchvision.datasets.CIFAR10(root=cache_dir, train=False,
                                            download=True, transform=transform_no_aug)
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=100,
                                              shuffle=False, num_workers=8, pin_memory=True)
     train_loader.name = "Cifar10"
     return train_loader, test_loader, (32,32), 10

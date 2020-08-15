@@ -1,0 +1,14 @@
+{
+  "models" : [
+    "PC_ResNet18",
+    "OG_ResNet18",
+    "resnet18"
+  ],
+  "dataset": ["Cifar10"],
+  "epochs":   90,
+  "batch_sizes": [128],
+  "optimizer": "LRS",
+  "conv_method": "channelwise",
+  "threshs": [10.0],
+  "centering": true
+}

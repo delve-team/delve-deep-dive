@@ -80,11 +80,11 @@ class Trainer:
             self.optimizer = optim.Adam(model.parameters(), lr=0.0001)
         elif optimizer == "SGD":
             print('Using SGD')
-            self.optimizer = optim.SGD(model.parameters(), lr=0.0, momentum=0.9)
+            self.optimizer = optim.SGD(model.parameters(), momentum=0.9, weight_decay=5e-4)
         elif optimizer == "LRS":
             print('Using LRS')
-            self.optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-            self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, 5)
+            self.optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+            self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, self.epochs // 3)
         elif optimizer == "radam":
             print('Using radam')
             self.optimizer = RAdam(model.parameters())
